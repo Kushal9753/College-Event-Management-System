@@ -5,12 +5,12 @@ import authService from '../services/authService.js';
 // @access  Public
 export const login = async (req, res, next) => {
   try {
-    const { enrollmentNumber, password } = req.body;
-    if (!enrollmentNumber || !password) {
+    const { identifier, password } = req.body;
+    if (!identifier || !password) {
       res.status(400);
-      throw new Error('Please provide an enrollment number and password');
+      throw new Error('Please provide an email/enrollment number and password');
     }
-    const userData = await authService.loginUser(enrollmentNumber, password);
+    const userData = await authService.loginUser(identifier, password);
     res.status(200).json(userData);
   } catch (error) {
     res.status(401);
@@ -43,6 +43,27 @@ export const getProfile = async (req, res, next) => {
   try {
     res.status(200).json(req.user);
   } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Set new password using a token
+// @route   POST /api/auth/set-password
+// @access  Public
+export const setPassword = async (req, res, next) => {
+  try {
+    const { token, password } = req.body;
+    
+    if (!token || !password) {
+      res.status(400);
+      throw new Error('Please provide both token and new password');
+    }
+
+    const result = await authService.setPassword(token, password);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(400);
+    // Let the centralized errorHandler format it
     next(error);
   }
 };

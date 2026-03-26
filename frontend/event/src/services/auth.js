@@ -2,9 +2,9 @@ import api from './api';
 import { setToken, removeToken, setUserData } from '../utils/tokenHandler';
 
 class AuthService {
-  async login(enrollmentNumber, password) {
+  async login(identifier, password) {
     const response = await api.post('/auth/login', {
-      enrollmentNumber,
+      identifier,
       password,
     });
     
@@ -15,6 +15,7 @@ class AuthService {
     
     return response.data;
   }
+
 
   logout() {
     removeToken();
@@ -35,9 +36,17 @@ class AuthService {
       setToken(response.data.token);
       setUserData(response.data);
     }
-    
+    return response.data;}
+
+  async setPassword(token, password) {
+    // Sending token normally in body or as a query. Assuming body based on standard setups:
+    const response = await api.post('/auth/set-password', {
+      token,
+      password,
+    });
     return response.data;
   }
 }
+
 
 export default new AuthService();

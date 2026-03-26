@@ -9,7 +9,6 @@ import authService from '../../services/auth';
 const Login = () => {
   const navigate = useNavigate();
   
-  // Initialize form state
   const initialState = loginFields.reduce((acc, field) => {
     acc[field.name] = '';
     return acc;
@@ -20,7 +19,6 @@ const Login = () => {
   const [apiError, setApiError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Validate a single field
   const validateField = (name, value) => {
     const fieldConfig = loginFields.find(f => f.name === name);
     if (fieldConfig?.validation) {
@@ -32,9 +30,8 @@ const Login = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    setApiError(''); // Clear global api error on typing
+    setApiError(''); 
 
-    // Real-time validation
     const error = validateField(name, value);
     setErrors(prev => ({ ...prev, [name]: error }));
   };
@@ -69,16 +66,14 @@ const Login = () => {
     setApiError('');
 
     try {
-      // Real API Call
+      // Standard login handles all roles now
       const userData = await authService.login(
-        formData.enrollmentNumber, 
+        formData.identifier, 
         formData.password
       );
       
-      // Navigate based on actual role from backend
       navigate(`/${userData.role}`);
     } catch (error) {
-      // Show backend error
       const message = error.response?.data?.message || 'Login failed. Please try again.';
       setApiError(message);
     } finally {
@@ -93,14 +88,12 @@ const Login = () => {
     >
       <form className="mt-8 space-y-6" onSubmit={handleSubmit} noValidate>
         
-        {/* Global API Error */}
         {apiError && (
           <div className="p-3 rounded bg-red-100 border border-red-400 text-red-700 text-sm text-center">
             {apiError}
           </div>
         )}
 
-        {/* Dynamically render form fields based on configuration */}
         <div className="space-y-4">
           {loginFields.map((field) => (
             <Input

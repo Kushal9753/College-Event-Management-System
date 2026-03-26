@@ -6,6 +6,7 @@ import Spinner from './components/common/Spinner';
 // --- Auth pages (eagerly loaded — first thing users see) ---
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
+import SetPassword from './pages/Auth/SetPassword';
 
 // --- Admin pages (lazy loaded) ---
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
@@ -17,6 +18,15 @@ const AdminResults = lazy(() => import('./pages/admin/Results'));
 const AdminFeedback = lazy(() => import('./pages/admin/Feedback'));
 const AdminReports = lazy(() => import('./pages/admin/Reports'));
 const AdminSettings = lazy(() => import('./pages/admin/Settings'));
+const AdminCommunication = lazy(() => import('./pages/admin/Communication'));
+const AdminScheduling = lazy(() => import('./pages/admin/Scheduling'));
+
+// --- Admin > Manage Faculty sub-pages (lazy loaded) ---
+const MFFacultyManagement = lazy(() => import('./pages/admin/manage-faculty/FacultyManagement'));
+const MFCommunication = lazy(() => import('./pages/admin/manage-faculty/Communication'));
+const MFTaskManagement = lazy(() => import('./pages/admin/manage-faculty/TaskManagement'));
+const MFResourceSharing = lazy(() => import('./pages/admin/manage-faculty/ResourceSharing'));
+const MFScheduling = lazy(() => import('./pages/admin/manage-faculty/Scheduling'));
 
 // --- Faculty pages (lazy loaded) ---
 const FacultyDashboard = lazy(() => import('./pages/faculty/Dashboard'));
@@ -27,6 +37,7 @@ const FacultyResults = lazy(() => import('./pages/faculty/Results'));
 const FacultyReports = lazy(() => import('./pages/faculty/Reports'));
 const FacultySettings = lazy(() => import('./pages/faculty/Settings'));
 const FacultyProfile = lazy(() => import('./pages/faculty/Profile'));
+const FacultyCommunication = lazy(() => import('./pages/faculty/Communication'));
 
 // --- Student pages (lazy loaded) ---
 const StudentDashboard = lazy(() => import('./pages/student/Dashboard'));
@@ -47,17 +58,27 @@ function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/set-password" element={<SetPassword />} />
 
           {/* Admin panel — nested under /admin */}
           <Route path="/admin" element={<DashboardLayout role="admin" />}>
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<ManageUsers />} />
-            <Route path="faculty" element={<ManageFaculty />} />
+            <Route path="faculty" element={<ManageFaculty />}>
+              <Route index element={<Navigate to="faculty-management" replace />} />
+              <Route path="faculty-management" element={<MFFacultyManagement />} />
+              <Route path="communication" element={<MFCommunication />} />
+              <Route path="task-management" element={<MFTaskManagement />} />
+              <Route path="resource-sharing" element={<MFResourceSharing />} />
+              <Route path="scheduling" element={<MFScheduling />} />
+            </Route>
             <Route path="events" element={<ManageEvents />} />
             <Route path="payments" element={<AdminPayments />} />
             <Route path="results" element={<AdminResults />} />
             <Route path="feedback" element={<AdminFeedback />} />
             <Route path="reports" element={<AdminReports />} />
+            <Route path="communication" element={<AdminCommunication />} />
+            <Route path="scheduling" element={<AdminScheduling />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>
 
@@ -69,6 +90,7 @@ function App() {
             <Route path="participants" element={<Participants />} />
             <Route path="results" element={<FacultyResults />} />
             <Route path="reports" element={<FacultyReports />} />
+            <Route path="communication" element={<FacultyCommunication />} />
             <Route path="settings" element={<FacultySettings />} />
             <Route path="profile" element={<FacultyProfile />} />
           </Route>

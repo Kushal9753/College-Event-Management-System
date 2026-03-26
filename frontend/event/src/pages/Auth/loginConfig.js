@@ -1,13 +1,13 @@
 export const loginFields = [
   {
-    name: 'enrollmentNumber',
-    label: 'Enrollment Number',
+    name: 'identifier',
+    label: 'Email / Enrollment Number',
     type: 'text',
-    placeholder: 'Enter your enrollment number',
+    placeholder: 'Enter your email or enrollment number',
     required: true,
     validation: (value) => {
-      if (!value) return 'Enrollment number is required';
-      if (value.length < 5) return 'Enrollment number must be at least 5 characters';
+      if (!value) return 'Email or Enrollment number is required';
+      if (value.length < 5) return 'Must be at least 5 characters';
       return null;
     }
   },

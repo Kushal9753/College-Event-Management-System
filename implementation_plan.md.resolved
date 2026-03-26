@@ -1,0 +1,580 @@
+# CDGI College Event Management System - Implementation Plan
+
+A production-ready MERN stack solution for managing college events at Chameli Devi Group of Institutions (CDGI). This system features 13 interconnected MongoDB models, JWT authentication, QR-based attendance verification, automated PDF certificate generation, and real-time WebSocket notifications—all wrapped in a premium glassmorphic UI.
+
+## User Review Required
+
+> [!IMPORTANT]
+> **CDGI Logo Required**: Please provide the CDGI institution logo (PNG/SVG) to be embedded in PDF certificates. Default placeholder will be used otherwise.
+
+> [!WARNING]
+> **MongoDB Connection**: Ensure MongoDB is running locally or provide a MongoDB Atlas connection string for the `.env` file.
+
+---
+
+## Architecture Overview
+
+```mermaid
+graph TB
+    subgraph "Frontend (React + Vite)"
+        A[Login/Register] --> B[Role-Based Router]
+        B --> C[Admin Dashboard]
+        B --> D[Student Dashboard]
+        B --> E[Faculty Dashboard]
+        C --> F[Analytics Charts]
+        C --> G[Event Management]
+        D --> H[Event Browser]
+        D --> I[Payment Tracker]
+        D --> J[QR Code Display]
+        E --> K[QR Scanner]
+        E --> L[Result Entry]
+    end
+    
+    subgraph "Backend (Node.js + Express)"
+        M[JWT Auth Middleware] --> N[Role Guards]
+        N --> O[API Controllers]
+        O --> P[Services Layer]
+        P --> Q[Mongoose Models]
+    end
+    
+    subgraph "Real-time Features"
+        R[Socket.io Server]
+        S[QR Generator]
+        T[PDF Engine]
+    end
+    
+    subgraph "Database (MongoDB)"
+        U[(13 Collections)]
+    end
+    
+    O --> R
+    O --> S
+    O --> T
+    Q --> U
+```
+
+---
+
+## Proposed Changes
+
+### 1. Project Structure
+
+#### [NEW] Complete folder structure
+
+```
+minor/
+├── backend/
+│   ├── config/
+│   │   └── db.js
+│   ├── controllers/
+│   │   ├── authController.js
+│   │   ├── adminController.js
+│   │   ├── studentController.js
+│   │   ├── facultyController.js
+│   │   ├── eventController.js
+│   │   ├── registrationController.js
+│   │   ├── paymentController.js
+│   │   ├── resultController.js
+│   │   └── notificationController.js
+│   ├── middleware/
+│   │   ├── auth.js
+│   │   ├── roleGuard.js
+│   │   └── sanitize.js
+│   ├── models/
+│   │   ├── Admin.js
+│   │   ├── Student.js
+│   │   ├── Faculty.js
+│   │   ├── Department.js
+│   │   ├── Institute.js
+│   │   ├── Event.js
+│   │   ├── Registration.js
+│   │   ├── Payment.js
+│   │   ├── Prize.js
+│   │   ├── Result.js
+│   │   ├── Feedback.js
+│   │   ├── Report.js
+│   │   └── Notification.js
+│   ├── routes/
+│   │   ├── authRoutes.js
+│   │   ├── adminRoutes.js
+│   │   ├── studentRoutes.js
+│   │   ├── facultyRoutes.js
+│   │   ├── eventRoutes.js
+│   │   ├── registrationRoutes.js
+│   │   ├── paymentRoutes.js
+│   │   ├── resultRoutes.js
+│   │   └── notificationRoutes.js
+│   ├── services/
+│   │   ├── qrService.js
+│   │   ├── pdfService.js
+│   │   ├── rankingService.js
+│   │   └── socketService.js
+│   ├── utils/
+│   │   └── helpers.js
+│   ├── app.js
+│   ├── package.json
+│   └── .env
+├── frontend/
+│   ├── public/
+│   │   └── cdgi-logo.png
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── common/
+│   │   │   │   ├── GlassCard.jsx
+│   │   │   │   ├── Navbar.jsx
+│   │   │   │   ├── Loader.jsx
+│   │   │   │   └── Modal.jsx
+│   │   │   ├── admin/
+│   │   │   │   ├── StatsCard.jsx
+│   │   │   │   ├── EventTable.jsx
+│   │   │   │   └── PaymentChart.jsx
+│   │   │   ├── student/
+│   │   │   │   ├── EventCard.jsx
+│   │   │   │   ├── EventRegistration.jsx
+│   │   │   │   ├── PaymentStatus.jsx
+│   │   │   │   └── QRDisplay.jsx
+│   │   │   └── faculty/
+│   │   │       ├── QRScanner.jsx
+│   │   │       └── ResultEntry.jsx
+│   │   ├── pages/
+│   │   │   ├── Login.jsx
+│   │   │   ├── Register.jsx
+│   │   │   ├── AdminDashboard.jsx
+│   │   │   ├── StudentDashboard.jsx
+│   │   │   ├── FacultyDashboard.jsx
+│   │   │   └── EventDetails.jsx
+│   │   ├── context/
+│   │   │   ├── AuthContext.jsx
+│   │   │   └── SocketContext.jsx
+│   │   ├── hooks/
+│   │   │   ├── useAuth.js
+│   │   │   └── useSocket.js
+│   │   ├── utils/
+│   │   │   └── api.js
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   └── index.css
+│   ├── package.json
+│   ├── vite.config.js
+│   ├── tailwind.config.js
+│   └── postcss.config.js
+└── README.md
+```
+
+---
+
+### 2. Backend - Database Configuration
+
+#### [NEW] [db.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/config/db.js)
+
+MongoDB connection with error handling and graceful shutdown.
+
+---
+
+### 3. Backend - 13 Mongoose Models
+
+All models enforce NOT NULL and UNIQUE constraints as per the Data Dictionary.
+
+#### [NEW] [Admin.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/models/Admin.js)
+
+| Field | Type | Constraints |
+|-------|------|-------------|
+| admin_id | ObjectId | Primary Key |
+| name | String | Required |
+| email | String | Required, Unique |
+| password | String | Required (bcrypt hashed) |
+| phone | String | Regex: 10-15 digits |
+| role | String | Enum: ['super_admin', 'admin'] |
+
+#### [NEW] [Student.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/models/Student.js)
+
+| Field | Type | Constraints |
+|-------|------|-------------|
+| student_id | ObjectId | Primary Key |
+| enrollment_no | String | Required, Unique |
+| name | String | Required |
+| email | String | Required, Unique |
+| password | String | Required (bcrypt hashed) |
+| phone | String | Regex: 10-15 digits |
+| department_id | ObjectId | Ref: Department |
+| semester | Number | 1-8 |
+
+#### [NEW] [Faculty.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/models/Faculty.js)
+
+| Field | Type | Constraints |
+|-------|------|-------------|
+| faculty_id | ObjectId | Primary Key |
+| employee_id | String | Required, Unique |
+| name | String | Required |
+| email | String | Required, Unique |
+| password | String | Required (bcrypt hashed) |
+| phone | String | Regex: 10-15 digits |
+| department_id | ObjectId | Ref: Department |
+| designation | String | Required |
+
+#### [NEW] [Department.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/models/Department.js)
+
+| Field | Type | Constraints |
+|-------|------|-------------|
+| department_id | ObjectId | Primary Key |
+| name | String | Required, Unique |
+| code | String | Required, Unique (e.g., 'CSE', 'ECE') |
+| institute_id | ObjectId | Ref: Institute |
+| hod_name | String | Optional |
+
+#### [NEW] [Institute.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/models/Institute.js)
+
+| Field | Type | Constraints |
+|-------|------|-------------|
+| institute_id | ObjectId | Primary Key |
+| name | String | Required |
+| code | String | Required, Unique |
+| address | String | Required |
+| established_year | Number | Required |
+
+#### [NEW] [Event.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/models/Event.js)
+
+| Field | Type | Constraints |
+|-------|------|-------------|
+| event_id | ObjectId | Primary Key |
+| name | String | Required |
+| description | String | Required |
+| category | String | Enum: ['Technical', 'Cultural', 'Sports'] |
+| event_date | Date | Required |
+| registration_deadline | Date | Required |
+| max_participants | Number | Required |
+| current_participants | Number | Default: 0 |
+| venue | String | Required |
+| entry_fee | Number | Default: 0 |
+| coordinator_id | ObjectId | Ref: Faculty |
+| department_id | ObjectId | Ref: Department |
+| status | String | Enum: ['upcoming', 'ongoing', 'completed', 'cancelled'] |
+
+#### [NEW] [Registration.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/models/Registration.js)
+
+| Field | Type | Constraints |
+|-------|------|-------------|
+| registration_id | ObjectId | Primary Key |
+| student_id | ObjectId | Ref: Student, Required |
+| event_id | ObjectId | Ref: Event, Required |
+| registration_date | Date | Default: now |
+| status | String | Enum: ['pending', 'confirmed', 'cancelled'] |
+| qr_code | String | Unique, Auto-generated |
+| attendance_marked | Boolean | Default: false |
+
+**Unique Compound Index**: `{ student_id, event_id }` (Prevent duplicate registrations)
+
+#### [NEW] [Payment.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/models/Payment.js)
+
+| Field | Type | Constraints |
+|-------|------|-------------|
+| payment_id | ObjectId | Primary Key |
+| registration_id | ObjectId | Ref: Registration, Required |
+| amount | Number | Required |
+| transaction_id | String | Unique |
+| payment_date | Date | Default: now |
+| payment_method | String | Enum: ['UPI', 'Card', 'Cash', 'NetBanking'] |
+| status | String | Enum: ['pending', 'success', 'failed', 'refunded'] |
+| receipt_number | String | Auto-generated |
+
+#### [NEW] [Prize.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/models/Prize.js)
+
+| Field | Type | Constraints |
+|-------|------|-------------|
+| prize_id | ObjectId | Primary Key |
+| event_id | ObjectId | Ref: Event, Required |
+| position | Number | Required (1, 2, 3...) |
+| prize_name | String | Required |
+| prize_amount | Number | Default: 0 |
+| prize_description | String | Optional |
+
+#### [NEW] [Result.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/models/Result.js)
+
+| Field | Type | Constraints |
+|-------|------|-------------|
+| result_id | ObjectId | Primary Key |
+| registration_id | ObjectId | Ref: Registration, Required |
+| event_id | ObjectId | Ref: Event, Required |
+| score | Number | Required |
+| rank | Number | Auto-calculated |
+| prize_id | ObjectId | Ref: Prize (if winner) |
+| remarks | String | Optional |
+| published | Boolean | Default: false |
+
+#### [NEW] [Feedback.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/models/Feedback.js)
+
+| Field | Type | Constraints |
+|-------|------|-------------|
+| feedback_id | ObjectId | Primary Key |
+| student_id | ObjectId | Ref: Student, Required |
+| event_id | ObjectId | Ref: Event, Required |
+| rating | Number | 1-5, Required |
+| comments | String | Max 500 chars |
+| submitted_at | Date | Default: now |
+
+#### [NEW] [Report.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/models/Report.js)
+
+| Field | Type | Constraints |
+|-------|------|-------------|
+| report_id | ObjectId | Primary Key |
+| event_id | ObjectId | Ref: Event, Required |
+| generated_by | ObjectId | Ref: Admin |
+| report_type | String | Enum: ['registration', 'payment', 'attendance', 'result'] |
+| data | Mixed | JSON report data |
+| generated_at | Date | Default: now |
+
+#### [NEW] [Notification.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/models/Notification.js)
+
+| Field | Type | Constraints |
+|-------|------|-------------|
+| notification_id | ObjectId | Primary Key |
+| title | String | Required |
+| message | String | Required |
+| type | String | Enum: ['event', 'result', 'payment', 'announcement'] |
+| target_role | String | Enum: ['all', 'admin', 'student', 'faculty'] |
+| event_id | ObjectId | Ref: Event (optional) |
+| created_at | Date | Default: now |
+| is_read | Boolean | Default: false |
+
+---
+
+### 4. Backend - Core Services
+
+#### [NEW] [qrService.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/services/qrService.js)
+
+Generates unique QR codes for each registration using the `qrcode` npm package. Each QR encodes the `registration_id` for faculty scanning.
+
+#### [NEW] [pdfService.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/services/pdfService.js)
+
+Auto-generates participation/winner certificates using `pdfkit`:
+- Student name and enrollment number
+- Event name and date
+- Position (if winner)
+- CDGI logo and signature lines
+
+#### [NEW] [rankingService.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/services/rankingService.js)
+
+Calculates ranks from scores and auto-assigns prizes:
+```javascript
+// Algorithm: Sort by score DESC → Assign ranks → Map prizes
+```
+
+#### [NEW] [socketService.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/services/socketService.js)
+
+Socket.io integration for real-time:
+- Event announcements
+- Result publishing
+- Payment confirmations
+
+---
+
+### 5. Backend - Authentication & Security
+
+#### [NEW] [auth.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/middleware/auth.js)
+
+JWT verification middleware with token refresh support.
+
+#### [NEW] [roleGuard.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/middleware/roleGuard.js)
+
+Role-based access control:
+- `requireAdmin()` - Admin-only routes
+- `requireFaculty()` - Faculty + Admin
+- `requireStudent()` - Student-only routes
+
+#### [NEW] [sanitize.js](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/backend/middleware/sanitize.js)
+
+NoSQL injection protection using `express-mongo-sanitize`.
+
+---
+
+### 6. Backend - API Routes
+
+| Route Group | Base Path | Protected | Purpose |
+|-------------|-----------|-----------|---------|
+| Auth | `/api/auth` | No | Login, Register, Logout |
+| Admin | `/api/admin` | Admin | User management, Reports |
+| Student | `/api/students` | Student | Profile, Registrations |
+| Faculty | `/api/faculty` | Faculty | QR scan, Results |
+| Events | `/api/events` | Mixed | CRUD, Browse |
+| Registration | `/api/registrations` | Student | Register algorithm |
+| Payments | `/api/payments` | Student | Process, Status |
+| Results | `/api/results` | Faculty | Score entry, Rankings |
+| Notifications | `/api/notifications` | All | Real-time updates |
+
+---
+
+### 7. Frontend - Glassmorphism Theme
+
+#### [NEW] [index.css](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/frontend/src/index.css)
+
+Tailwind configuration with custom glassmorphism utilities:
+
+```css
+/* Glassmorphism base classes */
+.glass {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+```
+
+CDGI-themed gradient background with purple/blue tones.
+
+---
+
+### 8. Frontend - Key Components
+
+#### [NEW] [EventRegistration.jsx](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/frontend/src/components/student/EventRegistration.jsx)
+
+Core registration component implementing the Event Registration Algorithm:
+
+```mermaid
+flowchart TD
+    A[Student clicks Register] --> B{Check Deadline}
+    B -- Passed --> Z[Show Error]
+    B -- Valid --> C{Check Availability}
+    C -- Full --> Z
+    C -- Available --> D{Already Registered?}
+    D -- Yes --> Z
+    D -- No --> E[Create Registration]
+    E --> F[Generate QR Code]
+    F --> G{Paid Event?}
+    G -- Yes --> H[Create Pending Payment]
+    G -- No --> I[Confirm Registration]
+    H --> J[Show Payment Modal]
+    I --> K[Show QR Code]
+    J --> L[Process Payment]
+    L --> M{Payment Success?}
+    M -- Yes --> I
+    M -- No --> N[Retry/Cancel]
+```
+
+#### [NEW] [QRDisplay.jsx](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/frontend/src/components/student/QRDisplay.jsx)
+
+Displays student's QR code for event entry with download option.
+
+#### [NEW] [QRScanner.jsx](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/frontend/src/components/faculty/QRScanner.jsx)
+
+Camera-based QR scanner for faculty using `react-qr-reader`.
+
+#### [NEW] [AdminDashboard.jsx](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/frontend/src/pages/AdminDashboard.jsx)
+
+Analytics dashboard featuring:
+- Registration statistics cards
+- Payment revenue charts (Recharts)
+- Event category filters (Technical/Cultural/Sports)
+- Recent activity feed
+
+#### [NEW] [StudentDashboard.jsx](file:///c:/Users/kusha/OneDrive/Pictures/Desktop/minor/frontend/src/pages/StudentDashboard.jsx)
+
+Interactive dashboard with:
+- Upcoming events browser with filters
+- My registrations with status
+- Real-time payment tracking
+- Certificate download section
+
+---
+
+## Verification Plan
+
+### Automated Tests
+
+```bash
+# Backend API tests
+cd backend && npm test
+
+# Test specific endpoints
+npm run test:auth      # Authentication flows
+npm run test:events    # Event CRUD
+npm run test:register  # Registration algorithm
+```
+
+### Manual Verification
+
+1. **Authentication Flow**
+   - Register new student/faculty/admin accounts
+   - Login with each role and verify JWT tokens
+   - Test role-based route protection
+
+2. **Event Registration Algorithm**
+   - Create event with limited capacity
+   - Register students until full → verify rejection
+   - Test deadline enforcement
+   - Verify duplicate registration prevention
+
+3. **Payment Processing**
+   - Register for paid event → verify pending payment created
+   - Mock successful payment → verify status update
+   - Check receipt generation
+
+4. **QR Code System**
+   - Register for event → verify QR generated
+   - Scan QR with faculty dashboard → verify attendance marked
+   - Test invalid QR handling
+
+5. **Real-time Notifications**
+   - Create event announcement → verify WebSocket delivery
+   - Publish results → verify student notification
+
+6. **PDF Certificates**
+   - Complete event with results
+   - Download participation certificate → verify content
+   - Download winner certificate → verify prize details
+
+---
+
+## Dependencies
+
+### Backend (`package.json`)
+```json
+{
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^8.0.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.0",
+    "socket.io": "^4.6.0",
+    "qrcode": "^1.5.3",
+    "pdfkit": "^0.14.0",
+    "express-mongo-sanitize": "^2.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.0",
+    "multer": "^1.4.5-lts.1"
+  }
+}
+```
+
+### Frontend (`package.json`)
+```json
+{
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-router-dom": "^6.20.0",
+    "axios": "^1.6.0",
+    "socket.io-client": "^4.6.0",
+    "recharts": "^2.10.0",
+    "@zxing/library": "^0.20.0",
+    "react-hot-toast": "^2.4.1"
+  }
+}
+```
+
+---
+
+## Next Steps (Upon Approval)
+
+1. Initialize backend with Express server (`app.js`)
+2. Create all 13 Mongoose models with validations
+3. Implement JWT authentication system
+4. Build event registration API with algorithm
+5. Set up Vite + React frontend with glassmorphism theme
+6. Create core dashboards and registration component
+7. Integrate QR, PDF, and WebSocket features
+8. Final testing and documentation
