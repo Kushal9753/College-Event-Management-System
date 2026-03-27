@@ -2,26 +2,26 @@ import mongoose from 'mongoose';
 
 const eventSchema = new mongoose.Schema(
   {
-    title: { 
-      type: String, 
+    title: {
+      type: String,
       required: [true, 'Event title is required'],
       trim: true,
     },
-    description: { 
-      type: String, 
+    description: {
+      type: String,
       required: [true, 'Event description is required'],
     },
-    date: { 
-      type: Date, 
+    date: {
+      type: Date,
       required: [true, 'Event date is required'],
     },
-    location: { 
-      type: String, 
+    location: {
+      type: String,
       required: [true, 'Event location is required'],
     },
-    organizer: { 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: 'User', 
+    organizer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
       required: [true, 'Event organizer is required'],
     },
     status: {

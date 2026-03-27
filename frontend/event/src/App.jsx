@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from './components/layout/DashboardLayout';
 import Spinner from './components/common/Spinner';
+import { EventProvider } from './context/EventContext';
 
 // --- Auth pages (eagerly loaded — first thing users see) ---
 import Login from './pages/Auth/Login';
@@ -95,8 +96,13 @@ function App() {
             <Route path="profile" element={<FacultyProfile />} />
           </Route>
 
+
           {/* Student panel — nested under /student */}
-          <Route path="/student" element={<DashboardLayout role="student" />}>
+          <Route path="/student" element={
+            <EventProvider>
+              <DashboardLayout role="student" />
+            </EventProvider>
+          }>
             <Route index element={<StudentDashboard />} />
             <Route path="available-events" element={<AvailableEvents />} />
             <Route path="my-events" element={<StudentMyEvents />} />
@@ -106,6 +112,7 @@ function App() {
             <Route path="settings" element={<StudentSettings />} />
             <Route path="profile" element={<StudentProfile />} />
           </Route>
+
         </Routes>
       </Suspense>
     </BrowserRouter>

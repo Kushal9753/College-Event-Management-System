@@ -1,7 +1,7 @@
 import express from 'express';
 import {
   createEvent,
-  getAllEvents ,
+  getAllEvents,
   getPendingEvents,
   approveEvent,
   rejectEvent,
@@ -12,7 +12,7 @@ import { protect, authorize } from '../middleware/authMiddleware.js';
 const router = express.Router();
 
 // Public route to view approved events
-router.get('/', getAllEvents );
+router.get('/', getAllEvents);
 
 // Protected routes (requires login)
 router.get('/my-events', protect, getMyEvents);
