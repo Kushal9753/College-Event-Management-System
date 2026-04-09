@@ -30,6 +30,10 @@ const facultySchema = new mongoose.Schema(
       enum: ['active', 'inactive'],
       default: 'active',
     },
+    role: {
+      type: String,
+      default: 'faculty',
+    },
     inviteToken: {
       type: String,
     },

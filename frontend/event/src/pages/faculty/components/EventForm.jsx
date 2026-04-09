@@ -7,6 +7,8 @@ const EventForm = ({ isOpen, onClose, onSuccess }) => {
     description: '',
     date: '',
     location: '',
+    registrationFees: 0,
+    prize: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -23,7 +25,7 @@ const EventForm = ({ isOpen, onClose, onSuccess }) => {
     setError(null);
     try {
       await api.post('/events/create', formData);
-      setFormData({ title: '', description: '', date: '', location: '' });
+      setFormData({ title: '', description: '', date: '', location: '', registrationFees: 0, prize: '' });
       onSuccess();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create event');
@@ -85,6 +87,31 @@ const EventForm = ({ isOpen, onClose, onSuccess }) => {
               type="text"
               name="location"
               value={formData.location}
+              onChange={handleChange}
+              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2 bg-gray-50 bg-opacity-50"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Registration Fees</label>
+            <input
+              type="number"
+              name="registrationFees"
+              value={formData.registrationFees}
+              onChange={handleChange}
+              min="0"
+              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2 bg-gray-50 bg-opacity-50"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Prize/Reward</label>
+            <input
+              type="text"
+              name="prize"
+              value={formData.prize}
               onChange={handleChange}
               required
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2 bg-gray-50 bg-opacity-50"

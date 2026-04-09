@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Faculty from '../models/Faculty.js';
 
 export const protect = async (req, res, next) => {
   let token;
@@ -10,7 +11,13 @@ export const protect = async (req, res, next) => {
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      const user = await User.findById(decoded.id).select('-password');
+      // Check User collection first
+      let user = await User.findById(decoded.id).select('-password');
+
+      // If not in User collection, check Faculty collection
+      if (!user) {
+        user = await Faculty.findById(decoded.id).select('-password');
+      }
 
       if (!user) {
         res.status(401);

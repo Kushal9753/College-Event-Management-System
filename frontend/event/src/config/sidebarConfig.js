@@ -30,26 +30,20 @@ const icons = {
 const sidebarConfig = {
   admin: [
     { label: 'Dashboard', path: '', icon: icons.dashboard },
-    { label: 'Manage Users', path: 'users', icon: icons.users },
     { label: 'Manage Faculty', path: 'faculty', icon: icons.faculty },
     { label: 'Manage Events', path: 'events', icon: icons.calendar },
     { label: 'Payments', path: 'payments', icon: icons.payments },
     { label: 'Results', path: 'results', icon: icons.results },
-    { label: 'Feedback', path: 'feedback', icon: icons.feedback },
     { label: 'Reports', path: 'reports', icon: icons.reports },
-    { label: 'Communication', path: 'communication', icon: icons.communication },
-    { label: 'Scheduling', path: 'scheduling', icon: icons.schedule },
+    { label: 'Feedback / Messages', path: 'communication', icon: icons.communication },
     { label: 'Settings', path: 'settings', icon: icons.settings },
   ],
   faculty: [
     { label: 'Dashboard', path: '', icon: icons.dashboard },
     { label: 'Assigned Events', path: 'my-events', icon: icons.calendar },
-    { label: 'Create Event', path: 'create-event', icon: icons.create },
     { label: 'Participants', path: 'participants', icon: icons.participants },
     { label: 'Results', path: 'results', icon: icons.results },
     { label: 'Reports', path: 'reports', icon: icons.reports },
-    { label: 'Communication', path: 'communication', icon: icons.communication },
-    { label: 'Settings', path: 'settings', icon: icons.settings },
     { label: 'Profile', path: 'profile', icon: icons.profile },
   ],
   student: [
@@ -58,8 +52,6 @@ const sidebarConfig = {
     { label: 'My Events', path: 'my-events', icon: icons.ticket },
     { label: 'Payments', path: 'payments', icon: icons.payments },
     { label: 'My Result', path: 'my-result', icon: icons.results },
-    { label: 'Feedback', path: 'feedback', icon: icons.feedback },
-    { label: 'Settings', path: 'settings', icon: icons.settings },
     { label: 'Profile', path: 'profile', icon: icons.profile },
   ],
 };

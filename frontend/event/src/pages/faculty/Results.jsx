@@ -1,12 +1,13 @@
 import React from 'react';
+import ResultsView from '../../components/common/ResultsView';
 
+/**
+ * Faculty Results Page
+ * --------------------
+ * Shows results only for events assigned to this faculty.
+ */
 const Results = () => {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Results</h1>
-      <p className="text-gray-600 dark:text-gray-400">Publish and manage results for your events.</p>
-    </div>
-  );
+  return <ResultsView role="faculty" />;
 };
 
 export default Results;

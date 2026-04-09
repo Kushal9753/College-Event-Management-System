@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from './components/layout/DashboardLayout';
 import Spinner from './components/common/Spinner';
 import { EventProvider } from './context/EventContext';
+import { SocketProvider } from './context/SocketContext';
 
 // --- Auth pages (eagerly loaded — first thing users see) ---
 import Login from './pages/Auth/Login';
@@ -14,6 +15,7 @@ const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
 const ManageUsers = lazy(() => import('./pages/admin/ManageUsers'));
 const ManageFaculty = lazy(() => import('./pages/admin/ManageFaculty'));
 const ManageEvents = lazy(() => import('./pages/admin/ManageEvents'));
+const AdminCreateEvent = lazy(() => import('./pages/admin/CreateEvent'));
 const AdminPayments = lazy(() => import('./pages/admin/Payments'));
 const AdminResults = lazy(() => import('./pages/admin/Results'));
 const AdminFeedback = lazy(() => import('./pages/admin/Feedback'));
@@ -44,7 +46,7 @@ const FacultyCommunication = lazy(() => import('./pages/faculty/Communication'))
 const StudentDashboard = lazy(() => import('./pages/student/Dashboard'));
 const AvailableEvents = lazy(() => import('./pages/student/AvailableEvents'));
 const StudentMyEvents = lazy(() => import('./pages/student/MyEvents'));
-const StudentPayments = lazy(() => import('./pages/student/Payments'));
+const StudentPayments = lazy(() => import('./pages/student/MyRegistrations'));
 const MyResult = lazy(() => import('./pages/student/MyResult'));
 const StudentFeedback = lazy(() => import('./pages/student/Feedback'));
 const StudentSettings = lazy(() => import('./pages/student/Settings'));
@@ -52,8 +54,9 @@ const StudentProfile = lazy(() => import('./pages/student/Profile'));
 
 function App() {
   return (
-    <BrowserRouter>
-      <Suspense fallback={<Spinner />}>
+    <SocketProvider>
+      <BrowserRouter>
+        <Suspense fallback={<Spinner />}>
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Navigate to="/login" replace />} />
@@ -73,7 +76,10 @@ function App() {
               <Route path="resource-sharing" element={<MFResourceSharing />} />
               <Route path="scheduling" element={<MFScheduling />} />
             </Route>
-            <Route path="events" element={<ManageEvents />} />
+            <Route path="events">
+              <Route index element={<ManageEvents />} />
+              <Route path="create" element={<AdminCreateEvent />} />
+            </Route>
             <Route path="payments" element={<AdminPayments />} />
             <Route path="results" element={<AdminResults />} />
             <Route path="feedback" element={<AdminFeedback />} />
@@ -107,6 +113,7 @@ function App() {
             <Route path="available-events" element={<AvailableEvents />} />
             <Route path="my-events" element={<StudentMyEvents />} />
             <Route path="payments" element={<StudentPayments />} />
+            <Route path="my-registrations" element={<StudentPayments />} />
             <Route path="my-result" element={<MyResult />} />
             <Route path="feedback" element={<StudentFeedback />} />
             <Route path="settings" element={<StudentSettings />} />
@@ -115,7 +122,8 @@ function App() {
 
         </Routes>
       </Suspense>
-    </BrowserRouter>
+      </BrowserRouter>
+    </SocketProvider>
   );
 }
 
