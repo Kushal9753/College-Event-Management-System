@@ -40,6 +40,7 @@ const sidebarConfig = {
   ],
   faculty: [
     { label: 'Dashboard', path: '', icon: icons.dashboard },
+    { label: 'Create Event', path: 'create-event', icon: icons.create },
     { label: 'Assigned Events', path: 'my-events', icon: icons.calendar },
     { label: 'Participants', path: 'participants', icon: icons.participants },
     { label: 'Results', path: 'results', icon: icons.results },

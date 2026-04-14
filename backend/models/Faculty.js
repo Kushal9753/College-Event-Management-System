@@ -25,6 +25,18 @@ const facultySchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    phone: {
+      type: String,
+      default: '',
+    },
+    designation: {
+      type: String,
+      default: 'Assistant Professor',
+    },
+    collegeName: {
+      type: String,
+      default: 'CDGI',
+    },
     status: {
       type: String,
       enum: ['active', 'inactive'],

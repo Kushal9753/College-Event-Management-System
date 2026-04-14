@@ -84,7 +84,7 @@ export const getMyEvents = async (req, res, next) => {
     if (status) query.status = status;
 
     const events = await Event.find(query)
-      .populate('assignedFaculty', 'name email')
+      .populate('assignedFaculty', 'name email phone designation department collegeName')
       .populate('registrations', 'name email')
       .sort({ createdAt: -1 });
 
@@ -135,7 +135,7 @@ export const getEventById = async (req, res, next) => {
   try {
     const event = await Event.findById(req.params.id)
       .populate('createdBy', 'name email enrollmentNumber')
-      .populate('assignedFaculty', 'name email');
+      .populate('assignedFaculty', 'name email phone designation department collegeName');
 
     if (!event) {
       res.status(404);
@@ -201,7 +201,7 @@ export const getAllEvents = async (req, res, next) => {
 
     const events = await Event.find(query)
       .populate('createdBy', 'name email enrollmentNumber')
-      .populate('assignedFaculty', 'name email')
+      .populate('assignedFaculty', 'name email phone designation department collegeName')
       .populate('registrations', 'name email')
       .sort({ date: 1 }); // Sorted by earliest date first
 
@@ -246,7 +246,7 @@ export const getPendingEvents = async (req, res, next) => {
 
     const events = await Event.find({ status: 'pending' })
       .populate('createdBy', 'name enrollmentNumber')
-      .populate('assignedFaculty', 'name email')
+      .populate('assignedFaculty', 'name email phone designation department collegeName')
       .sort({ createdAt: -1 });
 
     res.status(200).json({ success: true, count: events.length, data: events });
@@ -608,7 +608,7 @@ export const getAssignedEvents = async (req, res, next) => {
   try {
     const events = await Event.find({ assignedFaculty: req.user._id })
       .populate('createdBy', 'name email')
-      .populate('assignedFaculty', 'name email')
+      .populate('assignedFaculty', 'name email phone designation department collegeName')
       .sort({ date: 1 });
 
     res.status(200).json({ success: true, count: events.length, data: events });
@@ -644,7 +644,7 @@ export const assignFaculty = async (req, res, next) => {
 
     const populated = await Event.findById(event._id)
       .populate('createdBy', 'name email')
-      .populate('assignedFaculty', 'name email');
+      .populate('assignedFaculty', 'name email phone designation department collegeName');
 
     getIO().emit('event_updated', populated);
 
@@ -751,7 +751,7 @@ export const addWinners = async (req, res, next) => {
 
     const populated = await Event.findById(event._id)
       .populate('createdBy', 'name email')
-      .populate('assignedFaculty', 'name email')
+      .populate('assignedFaculty', 'name email phone designation department collegeName')
       .populate('winners.student', 'name email enrollmentNumber');
 
     // Real-Time notification to admins
