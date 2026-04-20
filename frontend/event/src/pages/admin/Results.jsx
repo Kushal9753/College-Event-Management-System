@@ -7,7 +7,7 @@ import ResultsView from '../../components/common/ResultsView';
  * Shows results for ALL events.
  */
 const Results = () => {
-  return <ResultsView role="admin" />;
+ return <ResultsView role="admin" />;
 };
 
 export default Results;

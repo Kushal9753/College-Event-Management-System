@@ -5,12 +5,12 @@ import authService from '../services/authService.js';
 // @access  Public
 export const login = async (req, res, next) => {
   try {
-    const { identifier, password } = req.body;
+    const { identifier, password, expectedRole } = req.body;
     if (!identifier || !password) {
       res.status(400);
       throw new Error('Please provide an email/enrollment number and password');
     }
-    const userData = await authService.loginUser(identifier, password);
+    const userData = await authService.loginUser(identifier, password, expectedRole);
     res.status(200).json(userData);
   } catch (error) {
     res.status(401);
@@ -64,6 +64,56 @@ export const setPassword = async (req, res, next) => {
   } catch (error) {
     res.status(400);
     // Let the centralized errorHandler format it
+    next(error);
+  }
+};
+
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+export const updateProfile = async (req, res, next) => {
+  try {
+    let account = null;
+    let expectedRole = req.user.role; // Attached during token verify
+
+    if (expectedRole === 'faculty') {
+      const Faculty = (await import('../models/Faculty.js')).default;
+      account = await Faculty.findById(req.user._id);
+    } else {
+      const User = (await import('../models/User.js')).default;
+      account = await User.findById(req.user._id);
+    }
+
+    if (account) {
+      account.name = req.body.name || account.name;
+      account.phone = req.body.phone || account.phone;
+      
+      if (expectedRole === 'faculty') {
+        account.department = req.body.collegeName || account.department; // Match faculty schema
+      } else {
+        account.collegeName = req.body.collegeName || account.collegeName; 
+      }
+      
+      if (req.body.password) {
+        account.password = req.body.password;
+      }
+
+      const updatedAccount = await account.save();
+
+      res.status(200).json({
+        _id: updatedAccount._id,
+        name: updatedAccount.name,
+        email: updatedAccount.email,
+        phone: updatedAccount.phone,
+        collegeName: expectedRole === 'faculty' ? updatedAccount.department : updatedAccount.collegeName,
+        enrollmentNumber: updatedAccount.enrollmentNumber,
+        role: expectedRole, // explicitly send correct role
+      });
+    } else {
+      res.status(404);
+      throw new Error('Account not found');
+    }
+  } catch (error) {
     next(error);
   }
 };

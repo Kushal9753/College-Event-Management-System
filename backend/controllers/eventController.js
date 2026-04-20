@@ -219,9 +219,12 @@ export const getAllEvents = async (req, res, next) => {
           eventId: eventObj._id,
         });
 
+        const isAttended = eventObj.attended?.some(id => id.toString() === req.user._id.toString());
+
         return {
           ...eventObj,
           isRegistered: !!registration,
+          isAttended: isAttended || false,
           paymentStatus: registration ? registration.paymentStatus : null,
           qrCode: (registration && registration.paymentStatus === 'pending') ? registration.qrCode : null,
         };
@@ -379,21 +382,17 @@ export const registerForEvent = async (req, res, next) => {
     // Generate dynamic payment QR if fee > 0
     if (amount > 0) {
       const bankDetails = await BankDetails.findOne();
-      if (!bankDetails || !bankDetails.upiId) {
-        res.status(400);
-        throw new Error('Payment system is not configured by the administrator (No UPI ID found)');
+      if (bankDetails && bankDetails.upiId) {
+        // Extract details
+        const upiId = bankDetails.upiId;
+        const accountHolder = bankDetails.accountHolderName;
+        
+        // Standard UPI Payment URL: upi://pay?pa=<ADDRESS>&pn=<NAME>&am=<AMOUNT>&cu=INR&tn=<NOTE>
+        const upiString = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(accountHolder)}&am=${amount}&cu=INR&tn=${encodeURIComponent('Reg: ' + event.title.substring(0, 20))}`;
+        
+        // Generate QR data URI (Base64 image)
+        qrCode = await QRCode.toDataURL(upiString);
       }
-
-      // Extract details
-      const upiId = bankDetails.upiId;
-      const accountHolder = bankDetails.accountHolderName;
-      
-      // Standard UPI Payment URL: upi://pay?pa=<ADDRESS>&pn=<NAME>&am=<AMOUNT>&cu=INR&tn=<NOTE>
-      // Using 'pn' for Payee Name and 'tn' for Transaction Note (Event Name)
-      const upiString = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(accountHolder)}&am=${amount}&cu=INR&tn=${encodeURIComponent('Reg: ' + event.title.substring(0, 20))}`;
-      
-      // Generate QR data URI (Base64 image)
-      qrCode = await QRCode.toDataURL(upiString);
     }
 
     // Create the registration record

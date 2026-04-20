@@ -1,5 +1,5 @@
 import express from 'express';
-import { login, register, getProfile, setPassword } from '../controllers/authController.js';
+import { login, register, getProfile, setPassword, updateProfile } from '../controllers/authController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -8,6 +8,7 @@ router.post('/login', login);
 router.post('/register', register);
 router.post('/set-password', setPassword);
 router.get('/profile', protect, getProfile);
+router.put('/profile', protect, updateProfile);
 
 // Example of a role-protected route (Admin only)
 router.get('/admin-only', protect, authorize('admin'), (req, res) => {

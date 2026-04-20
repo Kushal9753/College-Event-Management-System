@@ -7,7 +7,7 @@ import ResultsView from '../../components/common/ResultsView';
  * Shows results only for events assigned to this faculty.
  */
 const Results = () => {
-  return <ResultsView role="faculty" />;
+ return <ResultsView role="faculty" />;
 };
 
 export default Results;

@@ -3,7 +3,13 @@ import Faculty from '../models/Faculty.js';
 import { generateToken } from '../utils/jwt.js';
 
 class AuthService {
-  async loginUser(identifier, password) {
+  /**
+   * Login user with optional role portal validation.
+   * @param {string} identifier - email or enrollment number
+   * @param {string} password
+   * @param {string} [expectedRole] - 'student' | 'faculty' | 'admin' (optional, from portal-specific login)
+   */
+  async loginUser(identifier, password, expectedRole) {
     // 1. Try to find in User collection (Student/Admin)
     const user = await User.findOne({
       $or: [{ enrollmentNumber: identifier }, { email: identifier }]
@@ -13,6 +19,13 @@ class AuthService {
     if (user) {
       const isMatch = await user.matchPassword(password);
       if (isMatch) {
+        // Validate the portal matches the user's role
+        if (expectedRole && user.role !== expectedRole) {
+          throw new Error(
+            `This is the ${expectedRole} login portal. Your account is registered as "${user.role}". Please use the correct portal.`
+          );
+        }
+
         return {
           _id: user._id,
           name: user.name,
@@ -32,6 +45,13 @@ class AuthService {
     if (faculty) {
       const isMatch = await faculty.matchPassword(password);
       if (isMatch) {
+        // Validate the portal matches
+        if (expectedRole && expectedRole !== 'faculty') {
+          throw new Error(
+            `This is the ${expectedRole} login portal. Your account is registered as "faculty". Please use the correct portal.`
+          );
+        }
+
         if (faculty.status !== 'active') {
           throw new Error('Your faculty account is inactive. Please contact the administrator.');
         }
@@ -76,6 +96,7 @@ class AuthService {
       throw new Error('Invalid user data');
     }
   }
+
   async setPassword(token, newPassword) {
     // 1. Check User collection (for Students/Admins password reset)
     let account = await User.findOne({
