@@ -43,6 +43,9 @@ const registrationSchema = new mongoose.Schema(
     qrCode: {
       type: String, // Data URI for the dynamic QR code
     },
+    paymentScreenshot: {
+      type: String, // Path to the uploaded screenshot
+    },
   },
   { timestamps: true }
 );

@@ -516,9 +516,7 @@ export const cancelEventRegistration = async (req, res, next) => {
 // @access  Private (Admin or Faculty who created/is assigned to the event)
 export const getEventParticipants = async (req, res, next) => {
   try {
-    const event = await Event.findById(req.params.id)
-      .populate('registrations', 'name email phone collegeName enrollmentNumber')
-      .populate('createdBy', 'name email');
+    const event = await Event.findById(req.params.id);
 
     if (!event) {
       res.status(404);
@@ -527,7 +525,7 @@ export const getEventParticipants = async (req, res, next) => {
 
     // Authorization: admin can see all; faculty can see if they created or are assigned
     if (req.user.role === 'faculty') {
-      const isCreator = event.createdBy._id.toString() === req.user._id.toString();
+      const isCreator = event.createdBy.toString() === req.user._id.toString();
       const isAssigned = event.assignedFaculty.some(
         (id) => id.toString() === req.user._id.toString()
       );
@@ -540,27 +538,30 @@ export const getEventParticipants = async (req, res, next) => {
       throw new Error('Not authorized to view participants');
     }
 
-    // Pagination support
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 50;
-    const startIndex = (page - 1) * limit;
-    const total = event.registrations.length;
-    const participants = event.registrations.slice(startIndex, startIndex + limit);
+    // Fetch from Registration model instead of just event.registrations
+    const registrations = await Registration.find({ eventId: event._id })
+      .populate('studentId', 'name email phone collegeName enrollmentNumber')
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
       data: {
         eventId: event._id,
         eventName: event.title,
-        totalRegistered: total,
+        totalRegistered: registrations.length,
         maxParticipants: event.maxParticipants,
-        participants,
-        pagination: {
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit),
-          total,
-        },
+        participants: registrations.map(reg => ({
+          _id: reg.studentId?._id,
+          name: reg.studentId?.name || reg.studentName,
+          email: reg.studentId?.email || reg.email,
+          phone: reg.studentId?.phone || reg.phone,
+          collegeName: reg.studentId?.collegeName,
+          enrollmentNumber: reg.studentId?.enrollmentNumber,
+          registrationId: reg._id,
+          paymentStatus: reg.paymentStatus,
+          paymentScreenshot: reg.paymentScreenshot,
+          transactionId: reg.transactionId,
+        })),
       },
     });
   } catch (error) {
@@ -1049,3 +1050,56 @@ export const markAttendance = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Submit payment proof (screenshot)
+// @route   POST /api/events/registration/:registrationId/payment
+// @access  Private (Student)
+export const submitPaymentProof = async (req, res, next) => {
+  try {
+    const { registrationId } = req.params;
+    
+    if (!req.file) {
+      res.status(400);
+      throw new Error('Please upload a screenshot of your payment');
+    }
+
+    const registration = await Registration.findById(registrationId);
+    if (!registration) {
+      res.status(404);
+      throw new Error('Registration not found');
+    }
+
+    // Verify ownership
+    if (registration.studentId.toString() !== req.user._id.toString()) {
+      res.status(403);
+      throw new Error('Not authorized to update this registration');
+    }
+
+    // Update registration with screenshot path
+    registration.paymentScreenshot = `/uploads/payments/${req.file.filename}`;
+    // Optional: add transaction ID if provided in body
+    if (req.body.transactionId) {
+      registration.transactionId = req.body.transactionId;
+    }
+    
+    await registration.save();
+
+    // Log the event
+    await EventLog.create({
+      event: registration.eventId,
+      action: 'payment_proof_submitted',
+      performedBy: req.user._id,
+      details: `Payment proof submitted for registration ${registrationId}`,
+    });
+
+    res.status(200).json({ 
+      success: true, 
+      message: 'Payment proof submitted successfully. Waiting for verification.',
+      data: registration 
+    });
+  } catch (error) {
+    if (!res.statusCode || res.statusCode === 200) res.status(400);
+    next(error);
+  }
+};
+

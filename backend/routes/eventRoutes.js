@@ -20,10 +20,12 @@ import {
   archiveEvent,
   exportEventData,
   markAttendance,
-  getMyRegistrations
+  getMyRegistrations,
+  submitPaymentProof
 } from '../controllers/eventController.js';
 import { getEventLogs } from '../controllers/logController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
+import { uploadPayment } from '../middleware/uploadMiddleware.js';
 
 const router = express.Router();
 
@@ -41,6 +43,8 @@ router.get('/:id', protect, getEventById);
 // Student registration routes
 router.post('/:id/register', protect, registerForEvent);
 router.delete('/:id/register', protect, cancelEventRegistration);
+router.post('/registration/:registrationId/payment', protect, uploadPayment.single('screenshot'), submitPaymentProof);
+
 
 // Participant info routes (Admin + Faculty)
 router.get('/:id/participants', protect, getEventParticipants);

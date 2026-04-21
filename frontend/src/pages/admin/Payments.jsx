@@ -47,6 +47,9 @@ const AdminPayments = () => {
  participantName: p.name,
  participantEmail: p.email,
  participantEnrollment: p.enrollmentNumber,
+ registrationId: p.registrationId,
+ paymentStatus: p.paymentStatus,
+ paymentScreenshot: p.paymentScreenshot,
  eventId: event._id,
  eventTitle: event.title || event.name,
  eventFees: event.registrationFees,
@@ -60,6 +63,7 @@ const AdminPayments = () => {
 
  setBankDetails(bankRes.data?.data || null);
  setPayments(paymentsRes.data?.data || []);
+ setRegistrations(allRegs);
  
  // For bank form initialization
  if (bankRes.data?.data) {
@@ -222,71 +226,145 @@ const AdminPayments = () => {
  )}
  </div>
 
- {/* Payments Table */}
- <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
- <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
- <h3 className="font-bold text-gray-900 ">Payment Records</h3>
- <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
- {['verified', 'all'].map(tab => (
- <button
- key={tab}
- onClick={() => setActiveTab(tab)}
- className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
- activeTab === tab
- ? 'bg-white text-indigo-600 shadow-sm'
- : 'text-gray-500 hover:text-gray-700 '
- }`}
- >
- {tab === 'verified' ? 'Verified Payments' : 'All Payments'}
- </button>
- ))}
- </div>
- </div>
+  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+  <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+  <h3 className="font-bold text-gray-900 ">Payment Records</h3>
+  <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+  {['pending', 'verified'].map(tab => (
+  <button
+  key={tab}
+  onClick={() => setActiveTab(tab)}
+  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+  activeTab === tab
+  ? 'bg-white text-indigo-600 shadow-sm'
+  : 'text-gray-500 hover:text-gray-700 '
+  }`}
+  >
+  {tab === 'pending' ? 'Pending Verification' : 'Verified Payments'}
+  </button>
+  ))}
+  </div>
+  </div>
 
- {payments.length === 0 ? (
- <div className="p-12 text-center text-gray-500 ">
- <svg className="mx-auto h-12 w-12 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/>
- </svg>
- <p className="font-medium">No payment records yet</p>
- <p className="text-sm mt-1">Verified payments will appear here.</p>
- </div>
- ) : (
- <div className="overflow-x-auto">
- <table className="min-w-full divide-y divide-gray-200 ">
- <thead className="bg-gray-50 ">
- <tr>
- <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
- <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Event</th>
- <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</th>
- <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
- <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Verified By</th>
- <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
- </tr>
- </thead>
- <tbody className="divide-y divide-gray-100 ">
- {payments.map(p => (
- <tr key={p._id} className="hover:bg-gray-50 transition-colors">
- <td className="px-6 py-4">
- <div className="text-sm font-bold text-gray-900 ">{p.studentId?.name}</div>
- <div className="text-xs text-gray-500">{p.studentId?.email}</div>
- </td>
- <td className="px-6 py-4 text-sm text-gray-900 ">{p.eventId?.title}</td>
- <td className="px-6 py-4 text-sm font-bold text-gray-900 ">₹{p.amount}</td>
- <td className="px-6 py-4">
- <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${getStatusColor(p.paymentStatus)}`}>
- {p.paymentStatus}
- </span>
- </td>
- <td className="px-6 py-4 text-sm text-gray-500">{p.verifiedBy?.name}</td>
- <td className="px-6 py-4 text-xs text-gray-500">{new Date(p.createdAt).toLocaleDateString()}</td>
- </tr>
- ))}
- </tbody>
- </table>
- </div>
- )}
- </div>
+  {activeTab === 'pending' ? (
+    registrations.length === 0 ? (
+      <div className="p-12 text-center text-gray-500 ">
+      <svg className="mx-auto h-12 w-12 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/>
+      </svg>
+      <p className="font-medium">No pending registrations</p>
+      <p className="text-sm mt-1">Students will appear here once they register for paid events.</p>
+      </div>
+    ) : (
+      <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-200 ">
+      <thead className="bg-gray-50 ">
+      <tr>
+      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
+      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Event</th>
+      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Fees</th>
+      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Proof (SS)</th>
+      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+      <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+      </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-100 ">
+      {registrations.filter(r => r.paymentStatus !== 'paid').map(r => (
+      <tr key={`${r.eventId}-${r.participantId}`} className="hover:bg-gray-50 transition-colors text-sm">
+      <td className="px-6 py-4">
+      <div className="font-bold text-gray-900 ">{r.participantName}</div>
+      <div className="text-xs text-gray-500">{r.participantEmail}</div>
+      </td>
+      <td className="px-6 py-4 text-gray-900 ">{r.eventTitle}</td>
+      <td className="px-6 py-4 font-bold text-indigo-600 ">₹{r.eventFees}</td>
+      <td className="px-6 py-4">
+        {r.paymentScreenshot ? (
+          <a 
+            href={`${import.meta.env.VITE_API_URL || ''}${r.paymentScreenshot}`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-indigo-600 hover:underline flex items-center gap-1 font-medium"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            View SS
+          </a>
+        ) : <span className="text-gray-400 italic">No proof yet</span>}
+      </td>
+      <td className="px-6 py-4">
+      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${getStatusColor(r.paymentStatus)}`}>
+      {r.paymentStatus}
+      </span>
+      </td>
+      <td className="px-6 py-4 text-right">
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => handleVerifyPayment(r.registrationId, 'approve')}
+            disabled={actionLoading === r.registrationId}
+            className="p-1 px-3 bg-green-600 hover:bg-green-700 text-white text-[10px] font-bold rounded shadow-sm hover:shadow transition-all disabled:opacity-50"
+          >
+            Approve
+          </button>
+          <button
+            onClick={() => handleVerifyPayment(r.registrationId, 'reject')}
+            disabled={actionLoading === r.registrationId}
+            className="p-1 px-3 bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold rounded shadow-sm hover:shadow transition-all disabled:opacity-50"
+          >
+            Reject
+          </button>
+        </div>
+      </td>
+      </tr>
+      ))}
+      </tbody>
+      </table>
+      </div>
+    )
+  ) : (
+    payments.length === 0 ? (
+    <div className="p-12 text-center text-gray-500 ">
+    <svg className="mx-auto h-12 w-12 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/>
+    </svg>
+    <p className="font-medium">No payment records yet</p>
+    <p className="text-sm mt-1">Verified payments will appear here.</p>
+    </div>
+    ) : (
+    <div className="overflow-x-auto">
+    <table className="min-w-full divide-y divide-gray-200 ">
+    <thead className="bg-gray-50 ">
+    <tr>
+    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
+    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Event</th>
+    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</th>
+    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Verified By</th>
+    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+    </tr>
+    </thead>
+    <tbody className="divide-y divide-gray-100 ">
+    {payments.map(p => (
+    <tr key={p._id} className="hover:bg-gray-50 transition-colors">
+    <td className="px-6 py-4">
+    <div className="text-sm font-bold text-gray-900 ">{p.studentId?.name || p.studentName}</div>
+    <div className="text-xs text-gray-500">{p.studentId?.email || p.email}</div>
+    </td>
+    <td className="px-6 py-4 text-sm text-gray-900 ">{p.eventId?.title}</td>
+    <td className="px-6 py-4 text-sm font-bold text-gray-900 ">₹{p.amount}</td>
+    <td className="px-6 py-4">
+    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${getStatusColor(p.paymentStatus)}`}>
+    {p.paymentStatus}
+    </span>
+    </td>
+    <td className="px-6 py-4 text-sm text-gray-500">{p.verifiedBy?.name}</td>
+    <td className="px-6 py-4 text-xs text-gray-500">{new Date(p.createdAt).toLocaleDateString()}</td>
+    </tr>
+    ))}
+    </tbody>
+    </table>
+    </div>
+    )
+  )}
+  </div>
  </div>
  );
 };

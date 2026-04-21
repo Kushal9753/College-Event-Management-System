@@ -45,6 +45,7 @@ app.use('/api/availability', availabilityRoutes); // Scheduling API
 
 // Serve 'uploads' directory statically for file access
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads/payments', express.static(path.join(__dirname, 'uploads/payments')));
 
 // Event routes
 app.use('/api/events', eventRoutes);

@@ -395,7 +395,7 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  <tr>
  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap">Student Details</th>
  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap">Amount</th>
- <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap">Transaction ID</th>
+ <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap">Proof (SS)</th>
  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap">Date</th>
  <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap">Status</th>
  </tr>
@@ -409,7 +409,19 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  <div className="text-[10px] text-gray-400 font-medium uppercase tracking-tighter mt-0.5">{p.phone || p.studentId?.phone || 'No phone'}</div>
  </td>
  <td className="px-6 py-3 text-sm font-bold text-indigo-600 whitespace-nowrap">₹{p.amount}</td>
- <td className="px-6 py-3 text-xs text-gray-500 font-mono italic max-w-[120px] truncate" title={p.transactionId}>{p.transactionId || '—'}</td>
+ <td className="px-6 py-3 text-xs text-gray-500 whitespace-nowrap">
+ {p.paymentScreenshot ? (
+ <a 
+ href={`${import.meta.env.VITE_API_URL || ''}${p.paymentScreenshot}`} 
+ target="_blank" 
+ rel="noopener noreferrer"
+ className="text-indigo-600 hover:underline flex items-center gap-1"
+ >
+ <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+ View SS
+ </a>
+ ) : 'No SS'}
+ </td>
  <td className="px-6 py-3 text-xs text-gray-500 whitespace-nowrap">{new Date(p.paymentDate || p.createdAt).toLocaleDateString()}</td>
  <td className="px-6 py-3 text-center whitespace-nowrap">
  {statusBadge(p.paymentStatus)}

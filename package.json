@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "autoskills": "^0.2.3"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^10.4.0"
   }
 }

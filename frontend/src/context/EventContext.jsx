@@ -83,6 +83,24 @@ export const EventProvider = ({ children }) => {
  }
  };
 
+  // Submit payment proof screenshot
+  const submitPaymentProof = async (registrationId, formData) => {
+    try {
+      const response = await api.post(`/events/registration/${registrationId}/payment`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      // Optionally re-fetch to update status
+      fetchEvents();
+      return response.data;
+    } catch (err) {
+      const message = err.response?.data?.message || 'Failed to upload payment proof';
+      setError(message);
+      throw err;
+    }
+  };
+
  const markAsAttended = (eventId) => {
  setEvents(prev => prev.map(event => 
  event.id === eventId ? { ...event, userStatus: 'Attended' } : event
@@ -96,6 +114,7 @@ export const EventProvider = ({ children }) => {
  error,
  registerEvent, 
  cancelRegistration, 
+ submitPaymentProof,
  markAsAttended,
  clearError,
  refreshEvents: fetchEvents 
