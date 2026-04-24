@@ -57,29 +57,46 @@ const ResultsView = ({ role = 'admin' }) => {
  }, []);
 
  const fetchData = async () => {
- try {
- setLoading(true);
+    try {
+      setLoading(true);
 
- const [resultsRes, eventsRes] = await Promise.all([
- resultService.getAllResults(),
- role === 'faculty'
- ? api.get('/events/my-events').catch(() => ({ data: { data: [] } }))
- : api.get('/events').catch(() => ({ data: { data: [] } })),
- ]);
+      let allEvents = [];
+      let allResults = [];
 
- const allResults = resultsRes?.data || [];
- const allEvents = eventsRes?.data?.data || eventsRes?.data || [];
+      if (role === 'faculty') {
+        const [resultsRes, createdRes, assignedRes] = await Promise.all([
+          resultService.getAllResults(),
+          api.get('/events/my-events').catch(() => ({ data: { data: [] } })),
+          api.get('/events/assigned').catch(() => ({ data: { data: [] } }))
+        ]);
+        
+        allResults = resultsRes?.data || [];
+        const createdEvents = createdRes?.data?.data || [];
+        const assignedEvents = assignedRes?.data?.data || [];
+        
+        // combine and deduplicate based on _id
+        const eventsMap = new Map();
+        createdEvents.forEach(e => eventsMap.set(e._id, e));
+        assignedEvents.forEach(e => eventsMap.set(e._id, e));
+        allEvents = Array.from(eventsMap.values());
 
- if (role === 'faculty') {
- // Only show results for events assigned to this faculty
- const myEventIds = new Set(allEvents.map((e) => e._id));
- setResults(allResults.filter((r) => myEventIds.has(r.eventId?._id || r.eventId)));
- setEvents(allEvents);
- } else {
- setResults(allResults);
- setEvents(allEvents);
- }
- } catch (err) {
+        // Only show results for events assigned or created by this faculty
+        const myEventIds = new Set(allEvents.map((e) => e._id));
+        setResults(allResults.filter((r) => myEventIds.has(r.eventId?._id || r.eventId)));
+        setEvents(allEvents);
+      } else {
+        const [resultsRes, eventsRes] = await Promise.all([
+          resultService.getAllResults(),
+          api.get('/events').catch(() => ({ data: { data: [] } }))
+        ]);
+
+        allResults = resultsRes?.data || [];
+        allEvents = eventsRes?.data?.data || eventsRes?.data || [];
+        
+        setResults(allResults);
+        setEvents(allEvents);
+      }
+    } catch (err) {
  console.error('Failed to fetch results:', err);
  setToast({ type: 'error', text: err.message || 'Failed to load results' });
  setTimeout(() => setToast(null), 4000);

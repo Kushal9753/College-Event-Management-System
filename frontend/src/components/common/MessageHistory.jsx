@@ -68,28 +68,30 @@ const timeAgo = (dateStr) => {
 /* ══════════════════════════════════════════════════════════════
  MessageHistory
  ══════════════════════════════════════════════════════════════ */
-const MessageHistory = () => {
- const [search, setSearch] = useState('');
+const MessageHistory = ({ mode = 'sent' }) => {
+  const [search, setSearch] = useState('');
  const [filterType, setFilterType] = useState('all'); // all | individual | broadcast | group
  const [expandedId, setExpandedId] = useState(null);
  const [messagesList, setMessagesList] = useState([]);
  const [isLoading, setIsLoading] = useState(true);
 
- /* fetch messages from DB */
- React.useEffect(() => {
- const fetchMessages = async () => {
- try {
- const res = await api.get('/messages/history');
- // Transform backend data to fit component structure
- const formatted = res.data.data.map(m => ({
- ...m,
- subject: m.message.length > 50 ? m.message.substring(0, 47) + '...' : m.message,
- sentAt: m.createdAt,
- recipients: m.type === 'broadcast' ? 'All Users' : m.receivers.map(r => r.name).join(', '),
- totalCount: m.receivers.length || (m.type === 'broadcast' ? 200 : 0),
- readCount: 0, // Placeholder as backend doesnt track read yet
- status: 'delivered'
- }));
+  /* fetch messages from DB */
+  React.useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const res = await api.get(`/messages/history?mode=${mode}`);
+        // Transform backend data to fit component structure
+        const formatted = res.data.data.map(m => ({
+          ...m,
+          subject: m.message.length > 50 ? m.message.substring(0, 47) + '...' : m.message,
+          sentAt: m.createdAt,
+          recipients: mode === 'inbox' 
+            ? (m.sender?.name || 'Unknown') 
+            : (m.type === 'broadcast' ? 'All Users' : m.receivers.map(r => r.name).join(', ')),
+          totalCount: m.receivers.length || (m.type === 'broadcast' ? 200 : 0),
+          readCount: 0, // Placeholder as backend doesnt track read yet
+          status: 'delivered'
+        }));
  setMessagesList(formatted);
  } catch (err) {
  console.error('Error fetching messages:', err);
@@ -181,12 +183,14 @@ const MessageHistory = () => {
  {/* ── message table ──────────────────────────────────────── */}
  <div className="overflow-x-auto">
  <table className="w-full text-left">
- <thead>
- <tr className="text-xs font-semibold uppercase tracking-wider text-gray-500 border-b border-gray-100 ">
- <th className="px-6 py-3 w-8"></th>
- <th className="px-3 py-3">Subject</th>
- <th className="px-3 py-3 hidden md:table-cell">Type</th>
- <th className="px-3 py-3 hidden lg:table-cell">Recipient(s)</th>
+  <thead>
+    <tr className="text-xs font-semibold uppercase tracking-wider text-gray-500 border-b border-gray-100 ">
+      <th className="px-6 py-3 w-8"></th>
+      <th className="px-3 py-3">Subject</th>
+      <th className="px-3 py-3 hidden md:table-cell">Type</th>
+      <th className="px-3 py-3 hidden lg:table-cell">
+        {mode === 'inbox' ? 'Sender' : 'Recipient(s)'}
+      </th>
  <th className="px-3 py-3 hidden sm:table-cell">Status</th>
  <th className="px-3 py-3 text-right hidden sm:table-cell">Read</th>
  <th className="px-6 py-3 text-right">Time</th>

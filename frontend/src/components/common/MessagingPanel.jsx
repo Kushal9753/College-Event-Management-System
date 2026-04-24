@@ -51,20 +51,20 @@ const MessagingPanel = () => {
  const groupDropdownRef = useRef(null);
  const bodyRef = useRef(null);
 
- /* fetch faculty from DB */
- useEffect(() => {
- const fetchFaculty = async () => {
- try {
- const res = await api.get('/faculty');
- setFacultyList(res.data.data);
- } catch (err) {
+  /* fetch recipients from DB */
+  useEffect(() => {
+    const fetchRecipients = async () => {
+      try {
+        const res = await api.get('/messages/recipients');
+        setFacultyList(res.data.data);
+      } catch (err) {
 
- console.error('Error fetching faculty:', err);
- setFetchError('Failed to load faculty list');
- }
- };
- fetchFaculty();
- }, []);
+        console.error('Error fetching recipients:', err);
+        setFetchError('Failed to load recipient list');
+      }
+    };
+    fetchRecipients();
+  }, []);
 
  /* close dropdowns on outside click */
  useEffect(() => {
@@ -212,7 +212,7 @@ const MessagingPanel = () => {
  ) : (
  <input
  type="text"
- placeholder="Search faculty by name…"
+ placeholder="Search name (Admin/Faculty)…"
  value={recipientSearch}
  onChange={(e) => { setRecipientSearch(e.target.value); setShowDropdown(true); }}
  onFocus={() => setShowDropdown(true)}
@@ -281,7 +281,7 @@ const MessagingPanel = () => {
 
  <input
  type="text"
- placeholder="Search and select faculty…"
+ placeholder="Search and select recipient…"
  value={groupSearch}
  onChange={(e) => { setGroupSearch(e.target.value); setShowGroupDropdown(true); }}
  onFocus={() => setShowGroupDropdown(true)}
