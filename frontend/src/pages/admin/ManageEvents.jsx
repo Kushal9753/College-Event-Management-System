@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
+import EventService from '../../services/eventService';
 import { useSocket } from '../../context/SocketContext';
 import EventDetailsModal from '../../components/common/EventDetailsModal';
 
@@ -17,7 +18,7 @@ const ManageEvents = () => {
   const socket = useSocket();
 
   const categories = ['All', 'hackathon', 'seminar', 'workshop', 'cultural', 'sports', 'technical', 'other'];
-  const statuses = ['All', 'pending', 'approved', 'ongoing', 'completed', 'rejected', 'archived'];
+  const statuses = ['All', 'pending', 'approved', 'ongoing', 'completed', 'pending_approval', 'published', 'rejected', 'archived'];
 
   const fetchEvents = async () => {
     try {
@@ -63,6 +64,44 @@ const ManageEvents = () => {
     }
   };
 
+  const handleApprove = async (id) => {
+    try {
+      setActionLoading(id);
+      await EventService.approveEvent(id);
+      fetchEvents();
+    } catch (err) {
+      alert(err.message || 'Failed to approve event');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleReject = async (id) => {
+    const reason = window.prompt('Enter rejection reason:');
+    if (!reason) return;
+    try {
+      setActionLoading(id);
+      await EventService.rejectEvent(id, reason);
+      fetchEvents();
+    } catch (err) {
+      alert(err.message || 'Failed to reject event');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleApproveResults = async (id) => {
+    try {
+      setActionLoading(id);
+      await EventService.approveResults(id);
+      fetchEvents();
+    } catch (err) {
+      alert(err.message || 'Failed to publish results');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const filteredEvents = events.filter(event => {
     const matchesSearch = (event.title || event.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (event.description || '').toLowerCase().includes(searchQuery.toLowerCase());
@@ -87,6 +126,10 @@ const ManageEvents = () => {
         return <span className={`${baseClasses} bg-purple-100 text-purple-700 border border-purple-200`}>Completed</span>;
       case 'archived':
         return <span className={`${baseClasses} bg-gray-100 text-gray-600 border border-gray-200`}>Archived</span>;
+      case 'pending_approval':
+        return <span className={`${baseClasses} bg-orange-100 text-orange-700 border border-orange-200`}>Pending Approval</span>;
+      case 'published':
+        return <span className={`${baseClasses} bg-teal-100 text-teal-700 border border-teal-200`}>Published</span>;
       default:
         return <span className={`${baseClasses} bg-gray-100 text-gray-700 border border-gray-200`}>{status}</span>;
     }
@@ -219,7 +262,7 @@ const ManageEvents = () => {
                       {renderStatusBadge(event.status)}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1.5 flex-nowrap">
                         <button
                           onClick={() => setSelectedEvent(event)}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
@@ -231,6 +274,32 @@ const ManageEvents = () => {
                           </svg>
                         </button>
                         
+                        {event.status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => handleApprove(event._id)}
+                              disabled={actionLoading === event._id}
+                              className="px-2.5 py-1 rounded-lg text-xs font-bold text-white bg-green-600 hover:bg-green-700 transition-all disabled:opacity-50"
+                              title="Approve"
+                            >✓ Approve</button>
+                            <button
+                              onClick={() => handleReject(event._id)}
+                              disabled={actionLoading === event._id}
+                              className="px-2.5 py-1 rounded-lg text-xs font-bold text-white bg-red-600 hover:bg-red-700 transition-all disabled:opacity-50"
+                              title="Reject"
+                            >✗ Reject</button>
+                          </>
+                        )}
+
+                        {event.status === 'pending_approval' && (
+                          <button
+                            onClick={() => handleApproveResults(event._id)}
+                            disabled={actionLoading === event._id}
+                            className="px-2.5 py-1 rounded-lg text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 transition-all disabled:opacity-50"
+                            title="Publish Results"
+                          >Publish Results</button>
+                        )}
+
                         {event.status !== 'archived' && (
                           <button
                             onClick={() => handleArchive(event._id)}
@@ -257,6 +326,7 @@ const ManageEvents = () => {
         <EventDetailsModal
           event={selectedEvent}
           onClose={() => setSelectedEvent(null)}
+          onUpdate={() => { fetchEvents(); setSelectedEvent(null); }}
         />
       )}
     </div>

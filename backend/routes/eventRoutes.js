@@ -21,7 +21,8 @@ import {
   exportEventData,
   markAttendance,
   getMyRegistrations,
-  submitPaymentProof
+  submitPaymentProof,
+  processPayment
 } from '../controllers/eventController.js';
 import { getEventLogs } from '../controllers/logController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
@@ -44,6 +45,7 @@ router.get('/:id', protect, getEventById);
 router.post('/:id/register', protect, registerForEvent);
 router.delete('/:id/register', protect, cancelEventRegistration);
 router.post('/registration/:registrationId/payment', protect, uploadPayment.single('screenshot'), submitPaymentProof);
+router.post('/registration/:registrationId/pay', protect, processPayment);
 
 
 // Participant info routes (Admin + Faculty)

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useEvents } from '../../context/EventContext';
 import EventList from '../../components/student/events/EventList';
-import EventDetails from '../../components/student/events/EventDetails';
+import EventDetailsModal from '../../components/common/EventDetailsModal';
 
 const AvailableEvents = () => {
- const { events, loading, error, registerEvent } = useEvents();
+ const { events, loading, error, refreshEvents } = useEvents();
  const [selectedEvent, setSelectedEvent] = useState(null);
 
  // Show events that are NOT registered yet (userStatus is null)
@@ -54,19 +54,6 @@ const AvailableEvents = () => {
  );
  }
 
- const handleRegister = async (eventId) => {
- try {
- const result = await registerEvent(eventId);
- if (result?.data?.qrCode) {
- // Find the event and open details to show QR
- const event = events.find(e => e.id === eventId || e._id === eventId);
- if (event) setSelectedEvent(event);
- }
- } catch (err) {
- // Error handled by context and will be visible in modal if open
- }
- };
-
  return (
  <div className="max-w-7xl mx-auto">
  <div className="mb-8">
@@ -76,16 +63,18 @@ const AvailableEvents = () => {
 
  <EventList 
  events={availableEvents} 
- onRegister={handleRegister} 
  onViewDetails={handleOpenDetails}
  emptyMessage="No new events available at the moment. Check back later!"
  />
 
  {selectedEvent && (
- <EventDetails 
+ <EventDetailsModal 
  event={selectedEvent} 
  onClose={handleCloseDetails} 
- onRegister={registerEvent} 
+ onUpdate={() => {
+  refreshEvents();
+  setSelectedEvent(null);
+ }}
  />
  )}
  </div>

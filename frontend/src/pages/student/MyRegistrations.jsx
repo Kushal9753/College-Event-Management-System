@@ -111,7 +111,7 @@ const MyRegistrations = () => {
  {selectedReg && (
  <PaymentQRModal 
  isOpen={!!selectedReg}
- onClose={() => setSelectedReg(null)}
+ onClose={() => { setSelectedReg(null); fetchRegistrations(); }}
  registration={selectedReg}
  eventName={selectedReg.event?.title || selectedReg.event?.name}
  />

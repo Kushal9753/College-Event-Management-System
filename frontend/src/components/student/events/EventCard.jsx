@@ -67,29 +67,22 @@ const EventCard = ({ event, onRegister, onCancel, onViewDetails, layout = 'full'
  )}
  {isRegistered ? (
  <button 
- onClick={() => onCancel(event.id || event._id)}
+ onClick={() => onCancel?.(event.id || event._id)}
  className="flex-1 min-w-[80px] px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
  >
  Cancel
  </button>
  ) : (
  <button 
- onClick={async () => {
- setIsSubmitting(true);
- try {
- await onRegister(event.id || event._id);
- } finally {
- setIsSubmitting(false);
- }
- }}
- disabled={event.userStatus === 'Attended' || isSubmitting}
+ onClick={() => onViewDetails(event)}
  className={`flex-1 min-w-[80px] px-3 py-2 text-sm font-medium rounded-lg transition-all ${
  event.userStatus === 'Attended'
  ? 'bg-green-100 text-green-600 cursor-default '
  : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
  }`}
+ disabled={event.userStatus === 'Attended'}
  >
- {isSubmitting ? '...' : event.userStatus === 'Attended' ? 'Attended' : 'Register'}
+ {event.userStatus === 'Attended' ? 'Attended' : 'Register'}
  </button>
  )}
  </div>

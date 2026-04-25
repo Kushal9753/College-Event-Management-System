@@ -20,7 +20,9 @@ const eventLogSchema = new mongoose.Schema(
         'updated',
         'assigned',
         'attendance_marked',
-        'winners_added'
+        'winners_added',
+        'payment_completed',
+        'payment_proof_submitted'
       ],
     },
     performedBy: {

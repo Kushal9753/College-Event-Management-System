@@ -358,7 +358,7 @@ export const registerForEvent = async (req, res, next) => {
       throw new Error('Cannot register for events that are not approved');
     }
 
-    // Check for existing registration in Registration model
+    // Check for existing registration
     const existingRegistration = await Registration.findOne({
       studentId: req.user._id,
       eventId: event._id,
@@ -376,26 +376,9 @@ export const registerForEvent = async (req, res, next) => {
     }
 
     const amount = event.registrationFees || 0;
-    let qrCode = null;
-    let paymentStatus = amount > 0 ? 'pending' : 'paid';
+    const paymentStatus = amount > 0 ? 'pending' : 'paid';
 
-    // Generate dynamic payment QR if fee > 0
-    if (amount > 0) {
-      const bankDetails = await BankDetails.findOne();
-      if (bankDetails && bankDetails.upiId) {
-        // Extract details
-        const upiId = bankDetails.upiId;
-        const accountHolder = bankDetails.accountHolderName;
-        
-        // Standard UPI Payment URL: upi://pay?pa=<ADDRESS>&pn=<NAME>&am=<AMOUNT>&cu=INR&tn=<NOTE>
-        const upiString = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(accountHolder)}&am=${amount}&cu=INR&tn=${encodeURIComponent('Reg: ' + event.title.substring(0, 20))}`;
-        
-        // Generate QR data URI (Base64 image)
-        qrCode = await QRCode.toDataURL(upiString);
-      }
-    }
-
-    // Create the registration record
+    // Create registration (no QR code needed — payment handled via gateway)
     const registration = await Registration.create({
       studentName: req.user.name,
       email: req.user.email,
@@ -404,17 +387,16 @@ export const registerForEvent = async (req, res, next) => {
       eventId: event._id,
       amount,
       paymentStatus,
-      qrCode,
-      transactionId: '', // Initial empty string as per request field
+      transactionId: '',
     });
 
-    // Also update the event's registrations array for backward compatibility counting
+    // Update event's registrations array
     event.registrations.push(req.user._id);
     await event.save();
 
     const registrationCount = event.registrations.length;
 
-    // Emit real-time events — global broadcast + room-specific for faculty monitoring
+    // Emit real-time events
     const registrationPayload = {
       eventId: event._id,
       eventName: event.title,
@@ -426,7 +408,6 @@ export const registerForEvent = async (req, res, next) => {
     };
     getIO().emit('event_updated', event);
     getIO().emit('registration_update', registrationPayload);
-    // Targeted emit to faculty/admin subscribed to this specific event room
     getIO().to(`event_${event._id}`).emit('registration_update', registrationPayload);
 
     await EventLog.create({
@@ -442,6 +423,80 @@ export const registerForEvent = async (req, res, next) => {
       data: registration,
       event: event,
       registrationCount,
+    });
+  } catch (error) {
+    if (!res.statusCode || res.statusCode === 200) res.status(400);
+    next(error);
+  }
+};
+
+// @desc    Process dummy payment for a registration
+// @route   POST /api/events/registration/:registrationId/pay
+// @access  Private (Student)
+export const processPayment = async (req, res, next) => {
+  try {
+    const { registrationId } = req.params;
+    const { paymentMethod, cardNumber, cardExpiry, cardCvv, cardName, upiId } = req.body;
+
+    const registration = await Registration.findById(registrationId);
+    if (!registration) {
+      res.status(404);
+      throw new Error('Registration not found');
+    }
+
+    // Verify ownership
+    if (registration.studentId.toString() !== req.user._id.toString()) {
+      res.status(403);
+      throw new Error('Not authorized to pay for this registration');
+    }
+
+    if (registration.paymentStatus === 'paid') {
+      res.status(400);
+      throw new Error('Payment already completed');
+    }
+
+    // Validate payment details
+    if (paymentMethod === 'card') {
+      if (!cardNumber || !cardExpiry || !cardCvv || !cardName) {
+        res.status(400);
+        throw new Error('Please provide all card details');
+      }
+    } else if (paymentMethod === 'upi') {
+      if (!upiId) {
+        res.status(400);
+        throw new Error('Please provide UPI ID');
+      }
+    } else {
+      res.status(400);
+      throw new Error('Invalid payment method. Use "card" or "upi"');
+    }
+
+    // Simulate payment processing (always succeeds for demo)
+    const txnId = 'TXN' + Date.now() + Math.random().toString(36).substring(2, 8).toUpperCase();
+
+    registration.paymentStatus = 'paid';
+    registration.paymentMethod = paymentMethod;
+    registration.transactionId = txnId;
+    registration.paymentDate = new Date();
+    await registration.save();
+
+    await EventLog.create({
+      event: registration.eventId,
+      action: 'payment_completed',
+      performedBy: req.user._id,
+      details: `Payment of ₹${registration.amount} via ${paymentMethod} completed. TXN: ${txnId}`,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment successful! You are now registered.',
+      data: {
+        registrationId: registration._id,
+        transactionId: txnId,
+        amount: registration.amount,
+        paymentMethod,
+        paymentStatus: 'paid',
+      },
     });
   } catch (error) {
     if (!res.statusCode || res.statusCode === 200) res.status(400);

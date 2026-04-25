@@ -145,7 +145,8 @@ const MyEvents = () => {
  {selectedEvent && (
  <EventDetailsModal 
  event={selectedEvent} 
- onClose={() => setSelectedEvent(null)} 
+ onClose={() => setSelectedEvent(null)}
+ onUpdate={() => { setSelectedEvent(null); /* re-fetch */ const fn = async () => { try { const res = await api.get('/events/assigned'); setEvents(res.data.data || []); } catch(e){} }; fn(); }}
  />
  )}
  </div>
