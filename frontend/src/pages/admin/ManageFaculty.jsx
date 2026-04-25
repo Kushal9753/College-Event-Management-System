@@ -3,6 +3,7 @@ import facultyService, { departments, expertiseAreas } from '../../services/facu
 import FacultyTable from './components/FacultyTable';
 import FacultyForm from './components/FacultyForm';
 import BulkActions from './components/BulkActions';
+import { Plus, Search, AlertTriangle } from 'lucide-react';
 
 const ManageFaculty = () => {
  // --- State ---
@@ -144,9 +145,7 @@ const ManageFaculty = () => {
  onClick={handleAdd}
  className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20"
  >
- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
- <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
- </svg>
+ <Plus className="w-5 h-5" />
  Add Faculty
  </button>
  </div>
@@ -155,9 +154,7 @@ const ManageFaculty = () => {
  <div className="flex flex-col md:flex-row gap-3">
  {/* Search */}
  <div className="relative flex-1">
- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
- <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
- </svg>
+ <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
  <input
  type="text"
  placeholder="Search by name or email..."
@@ -221,9 +218,7 @@ const ManageFaculty = () => {
  <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
  <div className="flex items-center gap-3 mb-4">
  <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-red-600 ">
- <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
- </svg>
+ <AlertTriangle className="w-5 h-5 text-red-600 " />
  </div>
  <div>
  <h3 className="text-lg font-semibold text-gray-900 ">Confirm Delete</h3>

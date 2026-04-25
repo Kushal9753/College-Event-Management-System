@@ -1,579 +1,546 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { 
+  BarChart2, 
+  Tent, 
+  ClipboardSignature, 
+  IndianRupee, 
+  GraduationCap, 
+  Users, 
+  History,
+  Download,
+  X,
+  PieChart,
+  Clock,
+  Inbox,
+  BadgeCheck,
+  Hourglass,
+  Wallet,
+  Users2
+} from 'lucide-react';
 
 const REPORT_TYPES = [
- { id: 'summary', label: 'Summary', icon: '📊', desc: 'Platform overview with key metrics' },
- { id: 'events', label: 'Events', icon: '🎪', desc: 'All events with registrations & revenue' },
- { id: 'registrations', label: 'Registrations', icon: '📝', desc: 'Student registrations & payment status' },
- { id: 'revenue', label: 'Revenue', icon: '💰', desc: 'Payment analytics & revenue breakdown' },
- { id: 'students', label: 'Students', icon: '🎓', desc: 'All registered students & activity' },
- { id: 'faculty', label: 'Faculty', icon: '👨‍🏫', desc: 'Faculty members & assignments' },
- { id: 'activity', label: 'Activity Log', icon: '📋', desc: 'System actions & audit trail' },
+  { id: 'summary', label: 'Summary', icon: <BarChart2 size={18} />, desc: 'Platform overview with key metrics' },
+  { id: 'events', label: 'Events', icon: <Tent size={18} />, desc: 'All events with registrations & revenue' },
+  { id: 'registrations', label: 'Registrations', icon: <ClipboardSignature size={18} />, desc: 'Student registrations & payment status' },
+  { id: 'revenue', label: 'Revenue', icon: <IndianRupee size={18} />, desc: 'Payment analytics & revenue breakdown' },
+  { id: 'students', label: 'Students', icon: <GraduationCap size={18} />, desc: 'All registered students & activity' },
+  { id: 'faculty', label: 'Faculty', icon: <Users size={18} />, desc: 'Faculty members & assignments' },
+  { id: 'activity', label: 'Activity Log', icon: <History size={18} />, desc: 'System actions & audit trail' },
 ];
 
 const Reports = () => {
- const [activeReport, setActiveReport] = useState('summary');
- const [reportData, setReportData] = useState(null);
- const [loading, setLoading] = useState(false);
- const [startDate, setStartDate] = useState('');
- const [endDate, setEndDate] = useState('');
- const [downloading, setDownloading] = useState(false);
+  const [activeReport, setActiveReport] = useState('summary');
+  const [reportData, setReportData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
- const fetchReport = async (type) => {
- try {
- setLoading(true);
- const params = { type };
- if (startDate) params.startDate = startDate;
- if (endDate) params.endDate = endDate;
- const res = await api.get('/admin/reports', { params });
- setReportData(res.data.data);
- } catch (err) {
- console.error('Failed to fetch report:', err);
- } finally {
- setLoading(false);
- }
- };
+  const fetchReport = async (type) => {
+    try {
+      setLoading(true);
+      const params = { type };
+      if (startDate && endDate) {
+        params.startDate = startDate;
+        params.endDate = endDate;
+      }
+      const res = await api.get('/admin/reports', { params });
+      setReportData(res.data.data);
+    } catch (err) {
+      console.error('Failed to fetch report:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
- useEffect(() => {
- fetchReport(activeReport);
- }, [activeReport]);
+  useEffect(() => {
+    fetchReport(activeReport);
+  }, [activeReport, startDate, endDate]);
 
- const handleFilter = () => fetchReport(activeReport);
+  const handleDownload = async () => {
+    try {
+      setDownloading(true);
+      const params = { type: activeReport };
+      if (startDate && endDate) {
+        params.startDate = startDate;
+        params.endDate = endDate;
+      }
+      const res = await api.get('/admin/reports/download', {
+        params,
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${activeReport}_report.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download failed:', err);
+      alert('Failed to download report');
+    } finally {
+      setDownloading(false);
+    }
+  };
 
- const handleClearDates = () => {
- setStartDate('');
- setEndDate('');
- fetchReport(activeReport);
- };
+  const handleTabClick = (id) => {
+    if (activeReport === id) return;
+    setReportData(null);
+    setLoading(true);
+    setActiveReport(id);
+  };
 
- const handleDownload = async () => {
- try {
- setDownloading(true);
- const params = { type: activeReport };
- if (startDate) params.startDate = startDate;
- if (endDate) params.endDate = endDate;
- const res = await api.get('/admin/reports/download', {
- params,
- responseType: 'blob',
- });
- const url = window.URL.createObjectURL(new Blob([res.data]));
- const link = document.createElement('a');
- link.href = url;
- link.setAttribute('download', `${activeReport}_report.csv`);
- document.body.appendChild(link);
- link.click();
- link.remove();
- window.URL.revokeObjectURL(url);
- } catch (err) {
- console.error('Download failed:', err);
- alert('Failed to download report');
- } finally {
- setDownloading(false);
- }
- };
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6">
+        <div>
+          <h1 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-blue-400 mb-2">
+            Reports & Analytics
+          </h1>
+          <p className="text-gray-500 font-medium tracking-wide">Generate comprehensive insights and explore data seamlessly.</p>
+        </div>
 
- const handleTabClick = (id) => {
- if (activeReport === id) return;
- setReportData(null);
- setLoading(true);
- setActiveReport(id);
- };
+        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4">
+          {/* Date Range Picker */}
+          <div className="flex items-center gap-2 bg-white/60 backdrop-blur-xl border border-gray-100 rounded-full px-4 py-2.5 shadow-[0_2px_10px_rgb(0,0,0,0.03)]">
+            <input 
+              type="date" 
+              value={startDate} 
+              onChange={e => setStartDate(e.target.value)} 
+              className="bg-transparent border-none text-[13px] font-bold text-gray-700 cursor-pointer focus:outline-none" 
+            />
+            <span className="text-gray-400 font-bold text-[11px] uppercase tracking-widest px-1">to</span>
+            <input 
+              type="date" 
+              value={endDate} 
+              onChange={e => setEndDate(e.target.value)} 
+              className="bg-transparent border-none text-[13px] font-bold text-gray-700 cursor-pointer focus:outline-none" 
+            />
+            {(startDate || endDate) && (
+              <button 
+                onClick={() => { setStartDate(''); setEndDate(''); }} 
+                className="ml-1 p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-colors" 
+                title="Clear Dates"
+              >
+                <X className="w-4 h-4" strokeWidth={2.5} />
+              </button>
+            )}
+          </div>
 
- return (
- <div className="max-w-7xl mx-auto">
- {/* Header */}
- <div className="mb-8">
- <h1 className="text-3xl font-bold text-gray-900 mb-1">Reports & Analytics</h1>
- <p className="text-gray-500">Generate comprehensive reports and download data for analysis.</p>
- </div>
+          <button onClick={handleDownload} disabled={downloading || loading}
+            className="group relative flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-full transition-all disabled:opacity-50 shadow-[0_8px_20px_rgb(37,99,235,0.25)] hover:shadow-[0_12px_25px_rgb(37,99,235,0.35)] overflow-hidden">
+            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
+            <span className="relative z-10 flex items-center gap-2">
+              <Download className="w-5 h-5 drop-shadow-sm" strokeWidth={2.5} />
+              {downloading ? 'Processing...' : 'Export CSV'}
+            </span>
+          </button>
+        </div>
+      </div>
 
- {/* Report Type Pills */}
- <div className="flex flex-wrap gap-2 mb-6">
- {REPORT_TYPES.map(rt => (
- <button key={rt.id} onClick={() => handleTabClick(rt.id)}
- className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
-  activeReport === rt.id
-  ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/25'
-  : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300 hover:shadow-sm'
- }`}>
- <span>{rt.icon}</span>
- {rt.label}
- </button>
- ))}
- </div>
+      {/* Report Type Pills */}
+      <div className="flex flex-wrap gap-2 mb-10 p-1.5 bg-white/60 backdrop-blur-xl border border-gray-100 rounded-3xl shadow-[0_2px_15px_rgb(0,0,0,0.03)] filter backdrop-saturate-150">
+        {REPORT_TYPES.map(rt => (
+          <button key={rt.id} onClick={() => handleTabClick(rt.id)}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ${
+              activeReport === rt.id
+              ? 'bg-blue-600 text-white shadow-[0_4px_12px_rgb(37,99,235,0.3)] scale-[1.02]'
+              : 'bg-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+            }`}>
+            <span className={activeReport === rt.id ? 'opacity-100' : 'opacity-70 grayscale shrink-0'}>{rt.icon}</span>
+            {rt.label}
+          </button>
+        ))}
+      </div>
 
- {/* Date Filter & Download Bar */}
- <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-6 flex flex-col sm:flex-row items-center gap-4">
- <div className="flex items-center gap-2 flex-1">
- <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
- <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
- className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
- <span className="text-gray-400 text-sm">to</span>
- <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
- className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
- <button onClick={handleFilter}
- className="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors">
- Apply
- </button>
- {(startDate || endDate) && (
- <button onClick={handleClearDates} className="text-sm text-gray-500 hover:text-gray-700 underline">Clear</button>
- )}
- </div>
- <button onClick={handleDownload} disabled={downloading || loading}
- className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 shadow-sm">
- <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
- {downloading ? 'Downloading...' : 'Download CSV'}
- </button>
- </div>
-
- {/* Report Content */}
- {loading ? (
- <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
- <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mx-auto mb-4"></div>
- <p className="text-gray-500 text-sm">Generating report...</p>
- </div>
- ) : (
- <div>
- {activeReport === 'summary' && reportData && <SummaryReport data={reportData} />}
- {activeReport === 'events' && reportData && <EventsReport data={reportData} />}
- {activeReport === 'registrations' && reportData && <RegistrationsReport data={reportData} />}
- {activeReport === 'revenue' && reportData && <RevenueReport data={reportData} />}
- {activeReport === 'students' && reportData && <StudentsReport data={reportData} />}
- {activeReport === 'faculty' && reportData && <FacultyReport data={reportData} />}
- {activeReport === 'activity' && reportData && <ActivityReport data={reportData} />}
- </div>
- )}
- </div>
- );
+      {/* Report Content */}
+      <div className="relative min-h-[400px]">
+        {loading ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-3xl z-10 border border-gray-100/50">
+            <div className="relative w-16 h-16 mb-4">
+              <div className="absolute top-0 w-16 h-16 border-4 border-blue-100 rounded-full"></div>
+              <div className="absolute top-0 w-16 h-16 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+            </div>
+            <p className="text-gray-500 font-bold tracking-widest uppercase text-xs">Generating Report</p>
+          </div>
+        ) : (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {activeReport === 'summary' && reportData && <SummaryReport data={reportData} />}
+            {activeReport === 'events' && reportData && <EventsReport data={reportData} />}
+            {activeReport === 'registrations' && reportData && <RegistrationsReport data={reportData} />}
+            {activeReport === 'revenue' && reportData && <RevenueReport data={reportData} />}
+            {activeReport === 'students' && reportData && <StudentsReport data={reportData} />}
+            {activeReport === 'faculty' && reportData && <FacultyReport data={reportData} />}
+            {activeReport === 'activity' && reportData && <ActivityReport data={reportData} />}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 /* ══════════════════════════════════════════════════
    SUMMARY REPORT
    ══════════════════════════════════════════════════ */
 const SummaryReport = ({ data }) => {
- const o = data.overview;
- const metrics = [
- { label: 'Total Events', value: o.totalEvents, color: 'indigo', icon: '🎪' },
- { label: 'Approved Events', value: o.approvedEvents, color: 'emerald', icon: '✅' },
- { label: 'Pending Events', value: o.pendingEvents, color: 'amber', icon: '⏳' },
- { label: 'Total Students', value: o.totalStudents, color: 'blue', icon: '🎓' },
- { label: 'Total Faculty', value: o.totalFaculty, color: 'purple', icon: '👨‍🏫' },
- { label: 'Total Registrations', value: o.totalRegistrations, color: 'pink', icon: '📝' },
- { label: 'Total Revenue', value: `₹${o.totalRevenue?.toLocaleString() || 0}`, color: 'green', icon: '💰' },
- { label: 'Paid Registrations', value: o.paidRegistrations, color: 'teal', icon: '✓' },
- ];
+  const o = data.overview;
+  const metrics = [
+    { label: 'Total Events', value: o.totalEvents, bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-100', icon: <Tent size={24} /> },
+    { label: 'Approved Events', value: o.approvedEvents, bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-100', icon: <BadgeCheck size={24} /> },
+    { label: 'Pending Events', value: o.pendingEvents, bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-100', icon: <Hourglass size={24} /> },
+    { label: 'Total Students', value: o.totalStudents, bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-100', icon: <GraduationCap size={24} /> },
+    { label: 'Total Faculty', value: o.totalFaculty, bg: 'bg-pink-50', text: 'text-pink-700', border: 'border-pink-100', icon: <Users2 size={24} /> },
+    { label: 'Total Registrations', value: o.totalRegistrations, bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-100', icon: <ClipboardSignature size={24} /> },
+    { label: 'Total Revenue', value: `₹${o.totalRevenue?.toLocaleString() || 0}`, bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-100', icon: <IndianRupee size={24} /> },
+    { label: 'Paid Registrations', value: o.paidRegistrations, bg: 'bg-teal-50', text: 'text-teal-700', border: 'border-teal-100', icon: <Wallet size={24} /> },
+  ];
 
- const colorMap = {
- indigo: 'bg-indigo-50 border-indigo-200 text-indigo-700',
- emerald: 'bg-emerald-50 border-emerald-200 text-emerald-700',
- amber: 'bg-amber-50 border-amber-200 text-amber-700',
- blue: 'bg-blue-50 border-blue-200 text-blue-700',
- purple: 'bg-purple-50 border-purple-200 text-purple-700',
- pink: 'bg-pink-50 border-pink-200 text-pink-700',
- green: 'bg-green-50 border-green-200 text-green-700',
- teal: 'bg-teal-50 border-teal-200 text-teal-700',
- };
+  return (
+    <div className="space-y-8">
+      {/* Metric Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+        {metrics.map(m => (
+          <div key={m.label} className={`group rounded-3xl border p-6 shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-lg hover:-translate-y-1 transition-all duration-300 bg-white relative overflow-hidden flex flex-col justify-between h-full`}>
+            <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full ${m.bg} opacity-50 group-hover:scale-150 transition-transform duration-500 ease-out`}></div>
+            <div className="flex items-center justify-between mb-4 relative z-10">
+              <span className={`w-12 h-12 flex items-center justify-center rounded-2xl ${m.bg} ${m.border} border text-2xl shadow-sm`}>{m.icon}</span>
+            </div>
+            <div className="relative z-10">
+              <p className={`text-3xl font-black mb-1 ${m.text} tracking-tight`}>{m.value}</p>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{m.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
 
- return (
- <div className="space-y-6">
- {/* Metric Cards */}
- <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
- {metrics.map(m => (
- <div key={m.label} className={`rounded-xl border p-5 shadow-sm ${colorMap[m.color]}`}>
- <div className="flex items-center justify-between mb-2">
- <span className="text-2xl">{m.icon}</span>
- </div>
- <p className="text-2xl font-bold">{m.value}</p>
- <p className="text-xs font-medium opacity-75 mt-1">{m.label}</p>
- </div>
- ))}
- </div>
+      {/* Category Breakdown + Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_5px_20px_rgb(0,0,0,0.03)] p-8 relative overflow-hidden">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-extrabold text-gray-900 tracking-tight">Events by Category</h3>
+            <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+              <PieChart className="w-5 h-5" strokeWidth={2.5} />
+            </div>
+          </div>
+          {data.categoryBreakdown?.length > 0 ? (
+            <div className="space-y-5">
+              {data.categoryBreakdown.map(cat => {
+                const total = data.categoryBreakdown.reduce((s, c) => s + c.count, 0);
+                const pct = total > 0 ? ((cat.count / total) * 100).toFixed(0) : 0;
+                return (
+                  <div key={cat._id || 'other'} className="group">
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-gray-800 font-bold capitalize tracking-wide">{cat._id || 'Other'}</span>
+                      <span className="text-gray-500 font-medium bg-gray-50 px-2 py-0.5 rounded-md">{cat.count} ({pct}%)</span>
+                    </div>
+                    <div className="w-full bg-gray-100/80 rounded-full h-3 overflow-hidden shadow-inner">
+                      <div className="bg-gradient-to-r from-blue-500 to-blue-400 h-full rounded-full transition-all duration-1000 ease-out group-hover:from-blue-600 group-hover:to-blue-500" style={{ width: `${pct}%` }}></div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : <p className="text-sm text-gray-400 italic font-medium p-4 bg-gray-50 rounded-xl text-center">No event data yet.</p>}
+        </div>
 
- {/* Category Breakdown + Recent Activity */}
- <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
- <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
- <h3 className="font-bold text-gray-900 mb-4">Events by Category</h3>
- {data.categoryBreakdown?.length > 0 ? (
- <div className="space-y-3">
- {data.categoryBreakdown.map(cat => {
- const total = data.categoryBreakdown.reduce((s, c) => s + c.count, 0);
- const pct = total > 0 ? ((cat.count / total) * 100).toFixed(0) : 0;
- return (
- <div key={cat._id || 'other'}>
- <div className="flex justify-between text-sm mb-1">
- <span className="text-gray-700 font-medium capitalize">{cat._id || 'Other'}</span>
- <span className="text-gray-500">{cat.count} ({pct}%)</span>
- </div>
- <div className="w-full bg-gray-100 rounded-full h-2.5">
- <div className="bg-indigo-500 h-2.5 rounded-full transition-all" style={{ width: `${pct}%` }}></div>
- </div>
- </div>
- );
- })}
- </div>
- ) : <p className="text-sm text-gray-400 italic">No event data yet.</p>}
- </div>
-
- <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
- <h3 className="font-bold text-gray-900 mb-4">Recent Activity</h3>
- {data.recentActivity?.length > 0 ? (
- <div className="space-y-3">
- {data.recentActivity.map((log, i) => (
- <div key={log._id || i} className="flex gap-3 items-start">
- <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
-  log.action === 'registered' ? 'bg-indigo-500' :
-  log.action === 'approved' ? 'bg-emerald-500' :
-  log.action === 'rejected' ? 'bg-red-500' :
-  log.action === 'payment_completed' ? 'bg-green-500' :
-  'bg-gray-400'
- }`}></div>
- <div className="min-w-0">
- <p className="text-sm text-gray-800 truncate">{log.details || log.action}</p>
- <p className="text-xs text-gray-400">{new Date(log.createdAt).toLocaleString()}</p>
- </div>
- </div>
- ))}
- </div>
- ) : <p className="text-sm text-gray-400 italic">No activity yet.</p>}
- </div>
- </div>
- </div>
- );
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_5px_20px_rgb(0,0,0,0.03)] p-8 relative overflow-hidden">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-extrabold text-gray-900 tracking-tight">Recent Activity</h3>
+             <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
+              <Clock className="w-5 h-5" strokeWidth={2.5} />
+            </div>
+          </div>
+          {data.recentActivity?.length > 0 ? (
+            <div className="space-y-1 pl-2">
+              {data.recentActivity.map((log, i) => (
+                <div key={log._id || i} className="relative flex gap-4 pl-6 py-3">
+                  {/* Timeline Line */}
+                  {i !== data.recentActivity.length - 1 && (
+                    <div className="absolute left-[-5px] top-6 bottom-[-16px] w-[2px] bg-gray-100"></div>
+                  )}
+                  {/* Dot */}
+                  <div className={`absolute left-[-11px] top-4 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm ${
+                    log.action === 'registered' ? 'bg-blue-500' :
+                    log.action === 'approved' ? 'bg-emerald-500' :
+                    log.action === 'rejected' ? 'bg-red-500' :
+                    log.action === 'payment_completed' ? 'bg-green-500' :
+                    'bg-gray-400'
+                  }`}></div>
+                  <div className="min-w-0 flex-1 bg-gray-50/50 hover:bg-blue-50/30 p-3 rounded-2xl transition-colors">
+                    <p className="text-sm font-semibold text-gray-800 tracking-tight">{log.details || log.action}</p>
+                    <p className="text-xs text-gray-400 font-medium mt-1 uppercase tracking-wider">{new Date(log.createdAt).toLocaleString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : <p className="text-sm text-gray-400 italic font-medium p-4 bg-gray-50 rounded-xl text-center">No activity yet.</p>}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 /* ══════════════════════════════════════════════════
-   EVENTS REPORT
+   TABLE RENDERING FRAMEWORK
    ══════════════════════════════════════════════════ */
-const EventsReport = ({ data }) => {
- if (!data || data.length === 0) return <EmptyState label="events" />;
- return (
- <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
- <div className="overflow-x-auto">
- <table className="min-w-full divide-y divide-gray-200">
- <thead className="bg-gray-50">
- <tr>
- {['Event', 'Category', 'Date', 'Status', 'Fee', 'Registrations', 'Revenue', 'Created By'].map(h => (
- <th key={h} className="px-5 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{h}</th>
- ))}
- </tr>
- </thead>
- <tbody className="divide-y divide-gray-100">
- {data.map(e => (
- <tr key={e._id} className="hover:bg-gray-50 transition-colors">
- <td className="px-5 py-3 text-sm font-semibold text-gray-900">{e.title}</td>
- <td className="px-5 py-3"><span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-xs font-medium capitalize">{e.category || 'N/A'}</span></td>
- <td className="px-5 py-3 text-sm text-gray-600">{new Date(e.date).toLocaleDateString()}</td>
- <td className="px-5 py-3"><StatusBadge status={e.status} /></td>
- <td className="px-5 py-3 text-sm font-medium text-gray-900">{e.fee > 0 ? `₹${e.fee}` : 'Free'}</td>
- <td className="px-5 py-3 text-sm text-gray-700 font-medium">{e.registrations}</td>
- <td className="px-5 py-3 text-sm font-bold text-green-700">₹{e.revenue}</td>
- <td className="px-5 py-3 text-sm text-gray-600">{e.createdBy}</td>
- </tr>
- ))}
- </tbody>
- </table>
- </div>
- <div className="px-5 py-3 bg-gray-50 border-t text-xs text-gray-500">
- Showing {data.length} event(s) • Total Revenue: ₹{data.reduce((s, e) => s + (e.revenue || 0), 0).toLocaleString()}
- </div>
- </div>
- );
+const ReportTable = ({ data, columns, title, emptyLabel, renderRow }) => {
+  if (!data || data.length === 0) return <EmptyState label={emptyLabel} />;
+  return (
+    <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_5px_20px_rgb(0,0,0,0.03)] overflow-hidden">
+      <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+        <h3 className="text-lg font-extrabold text-gray-900">{title}</h3>
+        <span className="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-bold text-gray-500 shadow-sm">
+          {data.length} Records
+        </span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-100">
+          <thead className="bg-white">
+            <tr>
+              {columns.map(h => (
+                <th key={h} className="px-6 py-4 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50 bg-white">
+            {data.map((row, i) => renderRow(row, i))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 };
 
 /* ══════════════════════════════════════════════════
-   REGISTRATIONS REPORT
+   REPORTS VARIANTS
    ══════════════════════════════════════════════════ */
-const RegistrationsReport = ({ data }) => {
- if (!data || data.length === 0) return <EmptyState label="registrations" />;
- return (
- <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
- <div className="overflow-x-auto">
- <table className="min-w-full divide-y divide-gray-200">
- <thead className="bg-gray-50">
- <tr>
- {['Student', 'Email', 'Event', 'Amount', 'Payment', 'Method', 'TXN ID', 'Date'].map(h => (
- <th key={h} className="px-5 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{h}</th>
- ))}
- </tr>
- </thead>
- <tbody className="divide-y divide-gray-100">
- {data.map(r => (
- <tr key={r._id} className="hover:bg-gray-50 transition-colors">
- <td className="px-5 py-3 text-sm font-semibold text-gray-900">{r.studentName}</td>
- <td className="px-5 py-3 text-sm text-gray-600">{r.email}</td>
- <td className="px-5 py-3 text-sm text-gray-700">{r.eventId?.title || 'N/A'}</td>
- <td className="px-5 py-3 text-sm font-medium">₹{r.amount}</td>
- <td className="px-5 py-3"><StatusBadge status={r.paymentStatus} /></td>
- <td className="px-5 py-3 text-sm text-gray-600 capitalize">{r.paymentMethod || '—'}</td>
- <td className="px-5 py-3 text-xs font-mono text-gray-500">{r.transactionId || '—'}</td>
- <td className="px-5 py-3 text-sm text-gray-500">{new Date(r.createdAt).toLocaleDateString()}</td>
- </tr>
- ))}
- </tbody>
- </table>
- </div>
- <div className="px-5 py-3 bg-gray-50 border-t text-xs text-gray-500">
- Showing {data.length} registration(s)
- </div>
- </div>
- );
-};
+const EventsReport = ({ data }) => (
+  <ReportTable 
+    data={data} 
+    title="Event Archive" 
+    emptyLabel="events"
+    columns={['Event', 'Category', 'Date', 'Status', 'Fee', 'Registrations', 'Revenue', 'Created By']}
+    renderRow={(e) => (
+      <tr key={e._id} className="hover:bg-blue-50/30 transition-colors group">
+        <td className="px-6 py-4 text-sm font-bold text-gray-800">{e.title}</td>
+        <td className="px-6 py-4">
+          <span className="px-3 py-1 bg-gray-50 border border-gray-100 text-gray-600 rounded-lg text-xs font-bold capitalize tracking-wide">{e.category || 'N/A'}</span>
+        </td>
+        <td className="px-6 py-4 text-sm font-medium text-gray-500">{new Date(e.date).toLocaleDateString()}</td>
+        <td className="px-6 py-4"><StatusBadge status={e.status} /></td>
+        <td className="px-6 py-4 text-sm font-bold text-gray-800">{e.fee > 0 ? `₹${e.fee}` : <span className="text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md">Free</span>}</td>
+        <td className="px-6 py-4 text-sm font-bold text-gray-600">{e.registrations}</td>
+        <td className="px-6 py-4 text-sm font-black text-emerald-600">₹{e.revenue}</td>
+        <td className="px-6 py-4 text-sm font-medium text-gray-500">{e.createdBy}</td>
+      </tr>
+    )}
+  />
+);
 
-/* ══════════════════════════════════════════════════
-   REVENUE REPORT
-   ══════════════════════════════════════════════════ */
+const RegistrationsReport = ({ data }) => (
+  <ReportTable 
+    data={data} 
+    title="Student Registrations" 
+    emptyLabel="registrations"
+    columns={['Student', 'Email', 'Event', 'Amount', 'Payment', 'Method', 'TXN ID', 'Date']}
+    renderRow={(r) => (
+      <tr key={r._id} className="hover:bg-blue-50/30 transition-colors">
+        <td className="px-6 py-4 text-sm font-bold text-gray-800">{r.studentName}</td>
+        <td className="px-6 py-4 text-sm font-medium text-gray-500">{r.email}</td>
+        <td className="px-6 py-4 text-sm font-semibold text-gray-700">{r.eventId?.title || 'N/A'}</td>
+        <td className="px-6 py-4 text-sm font-black text-gray-800">₹{r.amount}</td>
+        <td className="px-6 py-4"><StatusBadge status={r.paymentStatus} /></td>
+        <td className="px-6 py-4 text-sm font-bold text-gray-500 capitalize">{r.paymentMethod || '—'}</td>
+        <td className="px-6 py-4 text-xs font-mono font-medium text-gray-400 bg-gray-50 rounded-md px-2 py-1 mx-4 w-fit">{r.transactionId || '—'}</td>
+        <td className="px-6 py-4 text-sm font-medium text-gray-500">{new Date(r.createdAt).toLocaleDateString()}</td>
+      </tr>
+    )}
+  />
+);
+
 const RevenueReport = ({ data }) => {
- if (!data) return <EmptyState label="revenue data" />;
- return (
- <div className="space-y-6">
- {/* Revenue Cards */}
- <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
- <MetricCard icon="💰" label="Total Revenue" value={`₹${data.totalRevenue?.toLocaleString() || 0}`} color="green" />
- <MetricCard icon="✅" label="Paid Registrations" value={data.totalPaid || 0} color="emerald" />
- <MetricCard icon="⏳" label="Pending Amount" value={`₹${data.pendingAmount?.toLocaleString() || 0}`} color="amber" />
- <MetricCard icon="📝" label="Pending Payments" value={data.pendingCount || 0} color="red" />
- </div>
+  if (!data) return <EmptyState label="revenue data" />;
+  return (
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-5">
+        <MetricCard icon={<IndianRupee size={32} />} label="Total Revenue" value={`₹${data.totalRevenue?.toLocaleString() || 0}`} color="emerald" />
+        <MetricCard icon={<BadgeCheck size={32} />} label="Paid Registrations" value={data.totalPaid || 0} color="blue" />
+        <MetricCard icon={<Hourglass size={32} />} label="Pending Amount" value={`₹${data.pendingAmount?.toLocaleString() || 0}`} color="amber" />
+        <MetricCard icon={<ClipboardSignature size={32} />} label="Pending Payments" value={data.pendingCount || 0} color="red" />
+      </div>
 
- <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
- {/* Payment Method Breakdown */}
- <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
- <h3 className="font-bold text-gray-900 mb-4">Payment Methods</h3>
- {data.methodBreakdown?.length > 0 ? (
- <div className="space-y-4">
- {data.methodBreakdown.map(m => (
- <div key={m._id || 'unknown'} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
- <div className="flex items-center gap-3">
- <span className="text-lg">{m._id === 'card' ? '💳' : m._id === 'upi' ? '📱' : '❓'}</span>
- <span className="font-medium text-gray-800 capitalize">{m._id || 'Unknown'}</span>
- </div>
- <div className="text-right">
- <p className="text-sm font-bold text-gray-900">₹{m.total.toLocaleString()}</p>
- <p className="text-xs text-gray-500">{m.count} payments</p>
- </div>
- </div>
- ))}
- </div>
- ) : <p className="text-sm text-gray-400 italic">No payment data yet.</p>}
- </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_5px_20px_rgb(0,0,0,0.03)] p-8">
+          <h3 className="text-xl font-extrabold text-gray-900 mb-6 tracking-tight">Payment Methods</h3>
+          {data.methodBreakdown?.length > 0 ? (
+            <div className="space-y-4">
+              {data.methodBreakdown.map(m => (
+                <div key={m._id || 'unknown'} className="group flex items-center justify-between p-4 bg-gray-50/80 hover:bg-white rounded-2xl border border-gray-100 hover:border-blue-100 hover:shadow-md transition-all">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-white border border-gray-100 shadow-sm flex items-center justify-center text-gray-400 group-hover:scale-110 group-hover:text-blue-600 transition-all">
+                      {m._id === 'card' ? <CreditCard strokeWidth={2} /> : m._id === 'upi' ? <IndianRupee strokeWidth={2} /> : <Wallet strokeWidth={2} />}
+                    </div>
+                    <div>
+                      <span className="font-bold text-gray-900 capitalize tracking-wide">{m._id || 'Unknown'}</span>
+                      <p className="text-xs font-semibold text-gray-400 mt-1">{m.count} transactions</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-black text-gray-900">₹{m.total.toLocaleString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : <p className="text-sm text-gray-400 italic p-4 bg-gray-50 rounded-xl text-center">No payment data yet.</p>}
+        </div>
 
- {/* Top Revenue Events */}
- <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
- <h3 className="font-bold text-gray-900 mb-4">Top Revenue Events</h3>
- {data.topEvents?.length > 0 ? (
- <div className="space-y-3">
- {data.topEvents.map((e, i) => (
- <div key={e._id || i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border">
- <span className={`w-7 h-7 flex items-center justify-center rounded-full text-white text-xs font-bold ${
-  i === 0 ? 'bg-yellow-500' : i === 1 ? 'bg-gray-400' : 'bg-orange-400'
- }`}>{i + 1}</span>
- <div className="flex-1 min-w-0">
- <p className="text-sm font-semibold text-gray-900 truncate">{e.eventTitle || 'Untitled'}</p>
- <p className="text-xs text-gray-500">{e.count} registrations</p>
- </div>
- <p className="text-sm font-bold text-green-700">₹{e.total.toLocaleString()}</p>
- </div>
- ))}
- </div>
- ) : <p className="text-sm text-gray-400 italic">No revenue data yet.</p>}
- </div>
- </div>
-
- {/* Monthly Revenue */}
- {data.monthlyRevenue?.length > 0 && (
- <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
- <h3 className="font-bold text-gray-900 mb-4">Monthly Revenue</h3>
- <div className="overflow-x-auto">
- <div className="flex items-end gap-3 min-h-[160px]">
- {data.monthlyRevenue.map(m => {
- const maxVal = Math.max(...data.monthlyRevenue.map(d => d.total));
- const h = maxVal > 0 ? (m.total / maxVal) * 140 : 10;
- return (
- <div key={m._id} className="flex flex-col items-center flex-1 min-w-[60px]">
- <p className="text-xs font-bold text-gray-900 mb-1">₹{m.total.toLocaleString()}</p>
- <div className="w-full bg-indigo-500 rounded-t-lg transition-all" style={{ height: `${h}px` }}></div>
- <p className="text-[10px] text-gray-500 mt-2 font-medium">{m._id}</p>
- </div>
- );
- })}
- </div>
- </div>
- </div>
- )}
- </div>
- );
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_5px_20px_rgb(0,0,0,0.03)] p-8">
+          <h3 className="text-xl font-extrabold text-gray-900 mb-6 tracking-tight">Top Revenue Events</h3>
+          {data.topEvents?.length > 0 ? (
+            <div className="space-y-4">
+              {data.topEvents.map((e, i) => (
+                <div key={e._id || i} className="group flex items-center gap-4 p-4 bg-gray-50/80 hover:bg-white rounded-2xl border border-gray-100 hover:border-yellow-100 hover:shadow-md transition-all">
+                  <div className={`w-10 h-10 flex items-center justify-center rounded-2xl text-white text-sm font-black shadow-sm ${
+                    i === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' : 
+                    i === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500' : 
+                    'bg-gradient-to-br from-orange-300 to-orange-500'
+                  }`}>
+                    #{i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-gray-900 truncate">{e.eventTitle || 'Untitled'}</p>
+                    <p className="text-xs font-semibold text-gray-400 mt-0.5">{e.count} registrations</p>
+                  </div>
+                  <p className="text-base font-black text-emerald-600">₹{e.total.toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
+          ) : <p className="text-sm text-gray-400 italic p-4 bg-gray-50 rounded-xl text-center">No revenue data yet.</p>}
+        </div>
+      </div>
+    </div>
+  );
 };
 
-/* ══════════════════════════════════════════════════
-   STUDENTS REPORT
-   ══════════════════════════════════════════════════ */
-const StudentsReport = ({ data }) => {
- if (!data || data.length === 0) return <EmptyState label="students" />;
- return (
- <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
- <div className="overflow-x-auto">
- <table className="min-w-full divide-y divide-gray-200">
- <thead className="bg-gray-50">
- <tr>
- {['Name', 'Email', 'Phone', 'College', 'Enrollment #', 'Events', 'Spent', 'Joined'].map(h => (
- <th key={h} className="px-5 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{h}</th>
- ))}
- </tr>
- </thead>
- <tbody className="divide-y divide-gray-100">
- {data.map(s => (
- <tr key={s._id} className="hover:bg-gray-50 transition-colors">
- <td className="px-5 py-3 text-sm font-semibold text-gray-900">{s.name}</td>
- <td className="px-5 py-3 text-sm text-gray-600">{s.email}</td>
- <td className="px-5 py-3 text-sm text-gray-600">{s.phone || '—'}</td>
- <td className="px-5 py-3 text-sm text-gray-600">{s.collegeName || '—'}</td>
- <td className="px-5 py-3 text-xs font-mono text-gray-500">{s.enrollmentNumber || '—'}</td>
- <td className="px-5 py-3 text-sm font-medium text-indigo-700">{s.eventsRegistered}</td>
- <td className="px-5 py-3 text-sm font-bold text-green-700">₹{s.totalSpent}</td>
- <td className="px-5 py-3 text-sm text-gray-500">{new Date(s.joinedOn).toLocaleDateString()}</td>
- </tr>
- ))}
- </tbody>
- </table>
- </div>
- <div className="px-5 py-3 bg-gray-50 border-t text-xs text-gray-500">
- Showing {data.length} student(s)
- </div>
- </div>
- );
-};
+const StudentsReport = ({ data }) => (
+  <ReportTable 
+    data={data} 
+    title="Registered Students" 
+    emptyLabel="students"
+    columns={['Name', 'Email', 'College', 'Events', 'Spent', 'Joined']}
+    renderRow={(s) => (
+      <tr key={s._id} className="hover:bg-blue-50/30 transition-colors">
+        <td className="px-6 py-4 text-sm font-bold text-gray-800">{s.name}</td>
+        <td className="px-6 py-4 text-sm font-medium text-gray-500">{s.email}</td>
+        <td className="px-6 py-4 text-sm font-medium text-gray-600">{s.collegeName || '—'}</td>
+        <td className="px-6 py-4"><span className="px-3 py-1 bg-blue-50 text-blue-700 font-black rounded-lg text-xs">{s.eventsRegistered}</span></td>
+        <td className="px-6 py-4 text-sm font-black text-emerald-600">₹{s.totalSpent}</td>
+        <td className="px-6 py-4 text-sm font-medium text-gray-400">{new Date(s.joinedOn).toLocaleDateString()}</td>
+      </tr>
+    )}
+  />
+);
+
+const FacultyReport = ({ data }) => (
+  <ReportTable 
+    data={data} 
+    title="Faculty Directory" 
+    emptyLabel="faculty"
+    columns={['Name', 'Email', 'Department', 'Designation', 'Events', 'Joined']}
+    renderRow={(f) => (
+      <tr key={f._id} className="hover:bg-blue-50/30 transition-colors">
+        <td className="px-6 py-4 text-sm font-bold text-gray-800">{f.name}</td>
+        <td className="px-6 py-4 text-sm font-medium text-gray-500">{f.email}</td>
+        <td className="px-6 py-4 text-sm font-medium text-gray-600">{f.department || '—'}</td>
+        <td className="px-6 py-4 text-sm font-medium text-gray-500"><span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">{f.designation || '—'}</span></td>
+        <td className="px-6 py-4"><span className="px-3 py-1 bg-blue-50 text-blue-700 font-black rounded-lg text-xs">{f.eventsAssigned}</span></td>
+        <td className="px-6 py-4 text-sm font-medium text-gray-400">{new Date(f.joinedOn).toLocaleDateString()}</td>
+      </tr>
+    )}
+  />
+);
+
+const ActivityReport = ({ data }) => (
+  <ReportTable 
+    data={data} 
+    title="System Activity Audit" 
+    emptyLabel="activity logs"
+    columns={['Action', 'Event', 'Performed By', 'Details', 'Timestamp']}
+    renderRow={(log, i) => (
+      <tr key={log._id || i} className="hover:bg-blue-50/30 transition-colors">
+        <td className="px-6 py-4">
+          <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${
+            log.action === 'created' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+            log.action === 'approved' ? 'bg-green-50 text-green-700 border-green-100' :
+            log.action === 'rejected' ? 'bg-red-50 text-red-700 border-red-100' :
+            log.action === 'registered' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
+            log.action === 'payment_completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+            'bg-gray-50 text-gray-600 border-gray-200'
+          }`}>
+            {log.action?.replace(/_/g, ' ')}
+          </span>
+        </td>
+        <td className="px-6 py-4 text-sm font-bold text-gray-700">{log.event?.title || '—'}</td>
+        <td className="px-6 py-4 text-sm font-semibold text-gray-600">{log.performedBy?.name || '—'}</td>
+        <td className="px-6 py-4 text-sm font-medium text-gray-500 max-w-xs truncate">{log.details || '—'}</td>
+        <td className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">{new Date(log.createdAt).toLocaleString()}</td>
+      </tr>
+    )}
+  />
+);
 
 /* ══════════════════════════════════════════════════
-   FACULTY REPORT
-   ══════════════════════════════════════════════════ */
-const FacultyReport = ({ data }) => {
- if (!data || data.length === 0) return <EmptyState label="faculty" />;
- return (
- <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
- <div className="overflow-x-auto">
- <table className="min-w-full divide-y divide-gray-200">
- <thead className="bg-gray-50">
- <tr>
- {['Name', 'Email', 'Phone', 'Department', 'Designation', 'Events Assigned', 'Joined'].map(h => (
- <th key={h} className="px-5 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{h}</th>
- ))}
- </tr>
- </thead>
- <tbody className="divide-y divide-gray-100">
- {data.map(f => (
- <tr key={f._id} className="hover:bg-gray-50 transition-colors">
- <td className="px-5 py-3 text-sm font-semibold text-gray-900">{f.name}</td>
- <td className="px-5 py-3 text-sm text-gray-600">{f.email}</td>
- <td className="px-5 py-3 text-sm text-gray-600">{f.phone || '—'}</td>
- <td className="px-5 py-3 text-sm text-gray-600">{f.department || '—'}</td>
- <td className="px-5 py-3 text-sm text-gray-600">{f.designation || '—'}</td>
- <td className="px-5 py-3 text-sm font-medium text-indigo-700">{f.eventsAssigned}</td>
- <td className="px-5 py-3 text-sm text-gray-500">{new Date(f.joinedOn).toLocaleDateString()}</td>
- </tr>
- ))}
- </tbody>
- </table>
- </div>
- <div className="px-5 py-3 bg-gray-50 border-t text-xs text-gray-500">
- Showing {data.length} faculty member(s)
- </div>
- </div>
- );
-};
-
-/* ══════════════════════════════════════════════════
-   ACTIVITY LOG REPORT
-   ══════════════════════════════════════════════════ */
-const ActivityReport = ({ data }) => {
- if (!data || data.length === 0) return <EmptyState label="activity logs" />;
-
- const actionColors = {
- created: 'bg-blue-100 text-blue-800',
- approved: 'bg-green-100 text-green-800',
- rejected: 'bg-red-100 text-red-800',
- registered: 'bg-indigo-100 text-indigo-800',
- payment_completed: 'bg-emerald-100 text-emerald-800',
- registration_cancelled: 'bg-orange-100 text-orange-800',
- archived: 'bg-gray-100 text-gray-800',
- attendance_marked: 'bg-teal-100 text-teal-800',
- winners_added: 'bg-yellow-100 text-yellow-800',
- };
-
- return (
- <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
- <div className="overflow-x-auto">
- <table className="min-w-full divide-y divide-gray-200">
- <thead className="bg-gray-50">
- <tr>
- {['Action', 'Event', 'Performed By', 'Details', 'Timestamp'].map(h => (
- <th key={h} className="px-5 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{h}</th>
- ))}
- </tr>
- </thead>
- <tbody className="divide-y divide-gray-100">
- {data.map((log, i) => (
- <tr key={log._id || i} className="hover:bg-gray-50 transition-colors">
- <td className="px-5 py-3">
- <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${actionColors[log.action] || 'bg-gray-100 text-gray-700'}`}>
- {log.action?.replace(/_/g, ' ')}
- </span>
- </td>
- <td className="px-5 py-3 text-sm text-gray-700">{log.event?.title || '—'}</td>
- <td className="px-5 py-3 text-sm text-gray-600">{log.performedBy?.name || '—'}</td>
- <td className="px-5 py-3 text-sm text-gray-500 max-w-xs truncate">{log.details || '—'}</td>
- <td className="px-5 py-3 text-xs text-gray-400">{new Date(log.createdAt).toLocaleString()}</td>
- </tr>
- ))}
- </tbody>
- </table>
- </div>
- <div className="px-5 py-3 bg-gray-50 border-t text-xs text-gray-500">
- Showing {data.length} log(s)
- </div>
- </div>
- );
-};
-
-/* ══════════════════════════════════════════════════
-   SHARED COMPONENTS
+   SHARED UTILITIES
    ══════════════════════════════════════════════════ */
 const StatusBadge = ({ status }) => {
- const colors = {
- approved: 'bg-green-100 text-green-800',
- pending: 'bg-yellow-100 text-yellow-800',
- rejected: 'bg-red-100 text-red-800',
- paid: 'bg-green-100 text-green-800',
- failed: 'bg-red-100 text-red-800',
- completed: 'bg-blue-100 text-blue-800',
- archived: 'bg-gray-100 text-gray-600',
- };
- return (
- <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${colors[status] || 'bg-gray-100 text-gray-700'}`}>
- {status}
- </span>
- );
+  const styles = {
+    approved: 'bg-green-50 text-green-700 border-green-100',
+    pending: 'bg-amber-50 text-amber-700 border-amber-100',
+    rejected: 'bg-red-50 text-red-700 border-red-100',
+    paid: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+    failed: 'bg-rose-50 text-rose-700 border-rose-100',
+    completed: 'bg-blue-50 text-blue-700 border-blue-100',
+    archived: 'bg-gray-50 text-gray-500 border-gray-200',
+  };
+  return (
+    <span className={`inline-flex items-center px-3 py-1.5 rounded-lg border text-[11px] font-black uppercase tracking-widest ${styles[status?.toLowerCase()] || styles.archived}`}>
+      {status}
+    </span>
+  );
 };
 
 const MetricCard = ({ icon, label, value, color }) => {
- const colorMap = {
- green: 'bg-green-50 border-green-200 text-green-700',
- emerald: 'bg-emerald-50 border-emerald-200 text-emerald-700',
- amber: 'bg-amber-50 border-amber-200 text-amber-700',
- red: 'bg-red-50 border-red-200 text-red-700',
- };
- return (
- <div className={`rounded-xl border p-5 shadow-sm ${colorMap[color]}`}>
- <span className="text-2xl">{icon}</span>
- <p className="text-2xl font-bold mt-2">{value}</p>
- <p className="text-xs font-medium opacity-75 mt-1">{label}</p>
- </div>
- );
+  const styles = {
+    emerald: 'from-emerald-50 to-white border-emerald-100 text-emerald-700 icon-emerald-100',
+    blue: 'from-blue-50 to-white border-blue-100 text-blue-700 icon-blue-100',
+    amber: 'from-amber-50 to-white border-amber-100 text-amber-700 icon-amber-100',
+    red: 'from-red-50 to-white border-red-100 text-red-700 icon-red-100',
+  };
+  const s = styles[color] || styles.blue;
+  return (
+    <div className={`rounded-3xl border p-6 bg-gradient-to-br ${s.split('icon-')[0]} shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-md hover:-translate-y-1 transition-all duration-300 relative overflow-hidden`}>
+      <span className={`absolute -right-4 -bottom-4 text-7xl opacity-10 filter grayscale contrast-200 blur-[2px] flex items-center justify-center w-32 h-32`}>{icon}</span>
+      <div className="relative z-10">
+        <span className="text-3xl drop-shadow-sm mb-3 block">{icon}</span>
+        <p className={`text-3xl font-black mb-1 tracking-tight ${s.split('text-')[1].split(' ')[0]}`}>{value}</p>
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">{label}</p>
+      </div>
+    </div>
+  );
 };
 
 const EmptyState = ({ label }) => (
- <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
- <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
- <p className="text-gray-400 font-medium">No {label} found for the selected period.</p>
- </div>
+  <div className="bg-white rounded-3xl border border-gray-200/60 p-16 flex flex-col items-center justify-center text-center shadow-sm">
+    <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+      <Inbox className="w-10 h-10 text-gray-300" strokeWidth={1.5} />
+    </div>
+    <h3 className="text-xl font-bold text-gray-900 mb-2">No {label} available</h3>
+    <p className="text-gray-500 max-w-sm">There is currently no data to display for the selected period. Check back later.</p>
+  </div>
 );
 
 export default Reports;

@@ -764,7 +764,7 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  <div className="flex-grow w-full">
  <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">{item.label}</label>
  <select
- value={winners.find(w => w.position === item.pos)?.student || ''}
+ value={(() => { const w = winners.find(w => w.position === item.pos); return w ? (typeof w.student === 'object' ? w.student?._id || '' : w.student) : ''; })()}
  onChange={(e) => handleWinnerChange(item.pos, e.target.value)}
  disabled={event.status === 'published' || event.status === 'pending_approval'}
  className="w-full bg-white border-none rounded-xl text-sm p-2 focus:ring-1 focus:ring-indigo-500">

@@ -5,6 +5,7 @@ import BankDetails from '../models/BankDetails.js';
 import Registration from '../models/Registration.js';
 import QRCode from 'qrcode';
 import { getIO } from '../socket.js';
+import Result from '../models/Result.js';
 
 // @desc    Create a new event
 // @route   POST /api/events/create
@@ -846,7 +847,8 @@ export const approveResults = async (req, res, next) => {
     const event = await Event.findById(req.params.id)
       .populate('registrations', '_id')
       .populate('assignedFaculty', '_id')
-      .populate('createdBy', '_id');
+      .populate('createdBy', '_id')
+      .populate('winners.student', 'name email enrollmentNumber phone collegeName');
 
     if (!event) {
       res.status(404);
@@ -860,6 +862,31 @@ export const approveResults = async (req, res, next) => {
 
     event.status = 'published';
     await event.save();
+
+    const positionMap = { 1: '1st', 2: '2nd', 3: '3rd' };
+    const resultWinners = event.winners.map(w => ({
+      position: positionMap[w.position] || `${w.position}th`,
+      studentId: w.student._id,
+      name: w.student.name || 'Unknown',
+      rollNumber: w.student.enrollmentNumber || 'N/A',
+      branch: w.student.collegeName || 'N/A',
+      year: 'N/A',
+      email: w.student.email || 'N/A',
+      phone: w.student.phone || 'N/A',
+      prize: event.prize || 'Certificate'
+    }));
+
+    await Result.findOneAndUpdate(
+      { eventId: event._id },
+      {
+        eventId: event._id,
+        eventName: event.title,
+        winners: resultWinners,
+        createdBy: req.user._id,
+        createdByModel: req.user.role === 'admin' ? 'User' : 'Faculty' // 'admin' comes as User in DB
+      },
+      { upsert: true, new: true }
+    );
 
     // Create notifications for all registered students
     const notifications = event.registrations.map((studentId) => ({

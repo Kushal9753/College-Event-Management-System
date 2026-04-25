@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import { ArrowLeft, Plus, CheckCircle, XCircle, X, Loader2 } from 'lucide-react';
 
 const AdminCreateEvent = () => {
  const navigate = useNavigate();
@@ -115,9 +116,7 @@ const AdminCreateEvent = () => {
  onClick={() => navigate('/admin/events')}
  className="p-2 rounded-xl text-gray-500 hover:text-gray-900 bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
  >
- <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
- </svg>
+ <ArrowLeft className="w-5 h-5" />
  </button>
  <div>
  <h1 className="text-2xl font-bold text-gray-900 ">Create New Event</h1>
@@ -130,9 +129,7 @@ const AdminCreateEvent = () => {
  {/* Gradient Header */}
  <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-indigo-600 to-purple-600">
  <h3 className="text-lg font-bold text-white flex items-center gap-2">
- <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
- </svg>
+ <Plus className="w-5 h-5" />
  Event Details
  </h3>
  </div>
@@ -147,14 +144,14 @@ const AdminCreateEvent = () => {
  }`}>
  <div className="flex items-center gap-2">
  {toastMessage.type === 'success' ? (
- <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+ <CheckCircle className="w-5 h-5" />
  ) : (
- <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+ <XCircle className="w-5 h-5" />
  )}
  <span>{toastMessage.text}</span>
  </div>
  <button onClick={() => setToastMessage(null)} className="ml-4 opacity-60 hover:opacity-100 transition-opacity">
- <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+ <X className="w-4 h-4" />
  </button>
  </div>
  )}
@@ -280,7 +277,7 @@ const AdminCreateEvent = () => {
  >
  {isSubmitting ? (
  <>
- <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+ <Loader2 className="animate-spin w-4 h-4" />
  Saving...
  </>
  ) : 'Create Event'}
