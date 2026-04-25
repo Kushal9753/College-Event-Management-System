@@ -47,7 +47,6 @@ const Reports = () => {
  };
 
  const handleDownload = async () => {
- if (activeReport === 'summary') return;
  try {
  setDownloading(true);
  const params = { type: activeReport };
@@ -73,6 +72,13 @@ const Reports = () => {
  }
  };
 
+ const handleTabClick = (id) => {
+ if (activeReport === id) return;
+ setReportData(null);
+ setLoading(true);
+ setActiveReport(id);
+ };
+
  return (
  <div className="max-w-7xl mx-auto">
  {/* Header */}
@@ -84,7 +90,7 @@ const Reports = () => {
  {/* Report Type Pills */}
  <div className="flex flex-wrap gap-2 mb-6">
  {REPORT_TYPES.map(rt => (
- <button key={rt.id} onClick={() => setActiveReport(rt.id)}
+ <button key={rt.id} onClick={() => handleTabClick(rt.id)}
  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
   activeReport === rt.id
   ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/25'
@@ -113,13 +119,11 @@ const Reports = () => {
  <button onClick={handleClearDates} className="text-sm text-gray-500 hover:text-gray-700 underline">Clear</button>
  )}
  </div>
- {activeReport !== 'summary' && (
  <button onClick={handleDownload} disabled={downloading || loading}
  className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 shadow-sm">
  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
  {downloading ? 'Downloading...' : 'Download CSV'}
  </button>
- )}
  </div>
 
  {/* Report Content */}

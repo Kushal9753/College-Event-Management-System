@@ -154,8 +154,21 @@ export const downloadReport = async (req, res, next) => {
         break;
       }
 
+      case 'summary':
       default: {
-        return res.status(400).json({ success: false, message: 'Invalid report type' });
+        const stats = await generateSummaryReport(dateFilter);
+        csv = 'Metric,Value\n';
+        csv += `"Total Events","${stats.overview.totalEvents}"\n`;
+        csv += `"Approved Events","${stats.overview.approvedEvents}"\n`;
+        csv += `"Pending Events","${stats.overview.pendingEvents}"\n`;
+        csv += `"Rejected Events","${stats.overview.rejectedEvents}"\n`;
+        csv += `"Total Students","${stats.overview.totalStudents}"\n`;
+        csv += `"Total Faculty","${stats.overview.totalFaculty}"\n`;
+        csv += `"Total Registrations","${stats.overview.totalRegistrations}"\n`;
+        csv += `"Total Revenue","₹${stats.overview.totalRevenue}"\n`;
+        csv += `"Paid Registrations","${stats.overview.paidRegistrations}"\n`;
+        filename = 'summary_report.csv';
+        break;
       }
     }
 
