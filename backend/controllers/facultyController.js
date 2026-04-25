@@ -63,7 +63,7 @@ export const getAllFaculty = async (req, res, next) => {
 // @route   POST /api/faculty
 export const createFaculty = async (req, res, next) => {
   try {
-    const { name, email, department, expertise, status } = req.body;
+    const { name, email, department, expertise, status, phone, collegeName } = req.body;
 
     if (!name || !email || !department) {
       res.status(400);
@@ -86,6 +86,8 @@ export const createFaculty = async (req, res, next) => {
       department,
       expertise,
       status,
+      phone,
+      collegeName,
       inviteToken,
       inviteTokenExpire,
     });

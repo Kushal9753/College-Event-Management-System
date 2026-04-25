@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { departments, expertiseAreas } from '../../../services/facultyService';
 
-const emptyForm = { name: '', email: '', phone: '', department: '', expertise: '' };
+const emptyForm = { name: '', email: '', phone: '', department: '', expertise: '', collegeName: '' };
 
 const FacultyForm = ({ isOpen, onClose, onSubmit, initialData, isSubmitting }) => {
  const [formData, setFormData] = useState(emptyForm);
@@ -16,6 +16,7 @@ const FacultyForm = ({ isOpen, onClose, onSubmit, initialData, isSubmitting }) =
  phone: initialData.phone || '',
  department: initialData.department || '',
  expertise: initialData.expertise || '',
+ collegeName: initialData.collegeName || '',
  });
  } else {
  setFormData(emptyForm);
@@ -152,6 +153,18 @@ const FacultyForm = ({ isOpen, onClose, onSubmit, initialData, isSubmitting }) =
  {expertiseAreas.map(e => <option key={e} value={e}>{e}</option>)}
  </select>
  {errors.expertise && <p className="mt-1 text-xs text-red-500">{errors.expertise}</p>}
+ </div>
+
+ {/* College */}
+ <div>
+ <label className="block text-sm font-medium text-gray-700 mb-1">College</label>
+ <input
+ name="collegeName"
+ value={formData.collegeName}
+ onChange={handleChange}
+ placeholder="College Name"
+ className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+ />
  </div>
 
  {/* Buttons */}

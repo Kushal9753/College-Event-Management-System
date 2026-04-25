@@ -47,9 +47,10 @@ const FacultyTable = ({
  </th>
  <th className="px-4 py-3">Name</th>
  <th className="px-4 py-3 hidden md:table-cell">Email</th>
- <th className="px-4 py-3 hidden lg:table-cell">Phone</th>
+ <th className="px-4 py-3 md:table-cell">Phone</th>
  <th className="px-4 py-3">Department</th>
- <th className="px-4 py-3 hidden lg:table-cell">Expertise</th>
+ <th className="px-4 py-3 hidden md:table-cell">College</th>
+ <th className="px-4 py-3 hidden md:table-cell">Expertise</th>
  <th className="px-4 py-3">Status</th>
  <th className="px-4 py-3 text-right">Actions</th>
  </tr>
@@ -80,13 +81,16 @@ const FacultyTable = ({
  <td className="px-4 py-3 text-gray-600 hidden md:table-cell">
  {f.email}
  </td>
- <td className="px-4 py-3 text-gray-600 hidden lg:table-cell">
+ <td className="px-4 py-3 text-gray-600 md:table-cell">
  {f.phone}
  </td>
  <td className="px-4 py-3 text-gray-600 ">
  {f.department}
  </td>
- <td className="px-4 py-3 text-gray-600 hidden lg:table-cell">
+ <td className="px-4 py-3 text-gray-600 hidden md:table-cell">
+ {f.collegeName}
+ </td>
+ <td className="px-4 py-3 text-gray-600 hidden md:table-cell">
  <span className="px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700 ">
  {f.expertise}
  </span>
