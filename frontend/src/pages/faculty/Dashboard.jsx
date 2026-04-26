@@ -254,7 +254,7 @@ const Dashboard = () => {
                               <CalendarDays className="w-5 h-5" />
                             </div>
                             <div>
-                              <div className="text-sm font-bold text-gray-900 mb-0.5">{event.name}</div>
+                              <div className="text-sm font-bold text-gray-900 mb-0.5">{event.title}</div>
                               <div className="text-xs text-gray-500 flex items-center gap-2">
                                 <span>{new Date(event.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                                 <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
@@ -320,7 +320,7 @@ const Dashboard = () => {
                       {getCategoryBadge(event.category)}
                       {getStatusBadge(event.status)}
                     </div>
-                    <h3 className="font-bold text-gray-900 mb-2 line-clamp-1 group-hover:text-blue-600 transition-colors">{event.name}</h3>
+                    <h3 className="font-bold text-gray-900 mb-2 line-clamp-1 group-hover:text-blue-600 transition-colors">{event.title}</h3>
                     <p className="text-sm text-gray-500 mb-6 line-clamp-2 leading-relaxed">{event.description}</p>
                     <div className="flex items-center justify-between text-sm font-semibold text-blue-600 pt-4 border-t border-gray-50">
                       <span className="flex items-center gap-2">
