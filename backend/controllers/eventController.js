@@ -7,7 +7,6 @@ import Payment from '../models/Payment.js';
 import Result from '../models/Result.js';
 import QRCode from 'qrcode';
 import { getIO } from '../socket.js';
-import Result from '../models/Result.js';
 
 // @desc    Create a new event
 // @route   POST /api/events/create
