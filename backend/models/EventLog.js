@@ -16,7 +16,6 @@ const eventLogSchema = new mongoose.Schema(
         'rejected',
         'registered',
         'registration_cancelled',
-        'archived',
         'updated',
         'assigned',
         'attendance_marked',

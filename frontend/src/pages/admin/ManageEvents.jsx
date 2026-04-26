@@ -18,7 +18,7 @@ const ManageEvents = () => {
   const socket = useSocket();
 
   const categories = ['All', 'hackathon', 'seminar', 'workshop', 'cultural', 'sports', 'technical', 'other'];
-  const statuses = ['All', 'pending', 'approved', 'ongoing', 'completed', 'pending_approval', 'published', 'rejected', 'archived'];
+  const statuses = ['All', 'pending', 'approved', 'ongoing', 'completed', 'pending_approval', 'published', 'rejected'];
 
   const fetchEvents = async () => {
     try {
@@ -41,29 +41,26 @@ const ManageEvents = () => {
     if (!socket) return;
     socket.on('event_created', fetchEvents);
     socket.on('event_updated', fetchEvents);
-    socket.on('event_archived', fetchEvents);
+
     
     return () => {
       socket.off('event_created', fetchEvents);
       socket.off('event_updated', fetchEvents);
-      socket.off('event_archived', fetchEvents);
+
     };
   }, [socket]);
-
-  const handleArchive = async (id) => {
-    if (!window.confirm('Are you sure you want to archive this event?')) return;
-    
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) return;
     try {
       setActionLoading(id);
-      await api.patch(`/events/${id}/archive`);
-      setEvents(events.map(ev => ev._id === id ? { ...ev, status: 'archived' } : ev));
+      await EventService.deleteEvent(id);
+      fetchEvents();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to archive event');
+      alert(err.message || 'Failed to delete event');
     } finally {
       setActionLoading(null);
     }
   };
-
   const handleApprove = async (id) => {
     try {
       setActionLoading(id);
@@ -124,8 +121,7 @@ const ManageEvents = () => {
         return <span className={`${baseClasses} bg-blue-100 text-blue-700 border border-blue-200`}>Ongoing</span>;
       case 'completed':
         return <span className={`${baseClasses} bg-purple-100 text-purple-700 border border-purple-200`}>Completed</span>;
-      case 'archived':
-        return <span className={`${baseClasses} bg-gray-100 text-gray-600 border border-gray-200`}>Archived</span>;
+
       case 'pending_approval':
         return <span className={`${baseClasses} bg-orange-100 text-orange-700 border border-orange-200`}>Pending Approval</span>;
       case 'published':
@@ -299,19 +295,16 @@ const ManageEvents = () => {
                             title="Publish Results"
                           >Publish Results</button>
                         )}
-
-                        {event.status !== 'archived' && (
-                          <button
-                            onClick={() => handleArchive(event._id)}
-                            disabled={actionLoading === event._id}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all disabled:opacity-50"
-                            title="Archive Event"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                            </svg>
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleDelete(event._id)}
+                          disabled={actionLoading === event._id}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all disabled:opacity-50"
+                          title="Delete Event"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </div>
                     </td>
                   </tr>

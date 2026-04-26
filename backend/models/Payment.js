@@ -43,7 +43,6 @@ const paymentSchema = new mongoose.Schema(
     verifiedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User', // Can be Admin or Faculty
-      required: true,
     },
   },
   { timestamps: true }

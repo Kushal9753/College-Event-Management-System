@@ -17,12 +17,13 @@ import {
   addWinners,
   approveResults,
   rejectResults,
-  archiveEvent,
+
   exportEventData,
   markAttendance,
   getMyRegistrations,
   submitPaymentProof,
-  processPayment
+  processPayment,
+  deleteEvent
 } from '../controllers/eventController.js';
 import { getEventLogs } from '../controllers/logController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
@@ -67,6 +68,7 @@ router.patch('/:id/attendance', protect, authorize('admin', 'faculty'), markAtte
 // Advanced analytics and actions
 router.get('/:id/logs', protect, authorize('admin', 'faculty'), getEventLogs);
 router.get('/:id/export', protect, authorize('admin', 'faculty'), exportEventData);
-router.patch('/:id/archive', protect, authorize('admin', 'faculty'), archiveEvent);
+router.delete('/:id', protect, authorize('admin', 'faculty'), deleteEvent);
+
 
 export default router;

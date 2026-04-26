@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   getAllFaculty,
+  getFacultyById,
   createFaculty,
   updateFaculty,
   deleteFaculty,
@@ -14,7 +15,7 @@ const router = express.Router();
 router.post('/login', facultyLogin);
 
 router.route('/').get(getAllFaculty).post(createFaculty);
-router.route('/:id').put(updateFaculty).delete(deleteFaculty);
+router.route('/:id').get(getFacultyById).put(updateFaculty).delete(deleteFaculty);
 router.patch('/:id/status', toggleFacultyStatus);
 
 export default router;

@@ -110,15 +110,14 @@ class EventService {
  }
  }
 
- async archiveEvent(id) {
+ async deleteEvent(id) {
  try {
- const response = await api.patch(`/events/${id}/archive`);
+ const response = await api.delete(`/events/${id}`);
  return response.data;
  } catch (error) {
  this._handleError(error);
  }
  }
-
  // ── Registration ──────────────────────────────────────
 
  async registerForEvent(eventId) {

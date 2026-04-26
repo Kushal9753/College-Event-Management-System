@@ -493,7 +493,7 @@ const ActivityReport = ({ data }) => {
  registered: 'bg-indigo-100 text-indigo-800',
  payment_completed: 'bg-emerald-100 text-emerald-800',
  registration_cancelled: 'bg-orange-100 text-orange-800',
- archived: 'bg-gray-100 text-gray-800',
+
  attendance_marked: 'bg-teal-100 text-teal-800',
  winners_added: 'bg-yellow-100 text-yellow-800',
  };
@@ -544,7 +544,7 @@ const StatusBadge = ({ status }) => {
  paid: 'bg-green-100 text-green-800',
  failed: 'bg-red-100 text-red-800',
  completed: 'bg-blue-100 text-blue-800',
- archived: 'bg-gray-100 text-gray-600',
+
  };
  return (
  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${colors[status] || 'bg-gray-100 text-gray-700'}`}>

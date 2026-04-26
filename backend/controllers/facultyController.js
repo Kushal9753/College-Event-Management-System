@@ -59,6 +59,23 @@ export const getAllFaculty = async (req, res, next) => {
   }
 };
 
+// @desc    Get single faculty by ID
+// @route   GET /api/faculty/:id
+export const getFacultyById = async (req, res, next) => {
+  try {
+    const faculty = await Faculty.findById(req.params.id);
+
+    if (!faculty) {
+      res.status(404);
+      throw new Error('Faculty not found');
+    }
+
+    res.status(200).json({ success: true, data: faculty });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Create faculty
 // @route   POST /api/faculty
 export const createFaculty = async (req, res, next) => {

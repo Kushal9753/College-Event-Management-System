@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useEvents } from '../../../context/EventContext';
 import PaymentQRModal from './PaymentQRModal';
+import FacultyDetailsModal from '../../common/FacultyDetailsModal';
 
 const EventDetails = ({ event, onClose, onRegister, onCancel }) => {
  const { error, clearError } = useEvents();
  const [showQR, setShowQR] = useState(false);
  const [registration, setRegistration] = useState(null);
  const [isSubmitting, setIsSubmitting] = useState(false);
+ const [selectedFacultyId, setSelectedFacultyId] = useState(null);
 
  // If the event is already registered but pending, initialize the QR state
  useEffect(() => {
@@ -83,10 +85,21 @@ const EventDetails = ({ event, onClose, onRegister, onCancel }) => {
  
  {event.assignedFaculty && (
  <div>
- <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1">Assigned Faculty</h4>
- <p className="text-gray-900 font-medium text-sm">
- {formatAssignedFaculty(event.assignedFaculty)}
- </p>
+ <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">Assigned Faculty</h4>
+ <div className="flex flex-wrap gap-2">
+ {event.assignedFaculty.map(f => (
+ <button 
+  key={f._id} 
+  onClick={() => setSelectedFacultyId(f._id)}
+  className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-100 hover:bg-blue-100 transition-all flex items-center gap-1.5"
+ >
+ <div className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-black">
+ {f.name?.charAt(0).toUpperCase()}
+ </div>
+ {f.name}
+ </button>
+ ))}
+ </div>
  </div>
  )}
  <div>
@@ -183,6 +196,12 @@ const EventDetails = ({ event, onClose, onRegister, onCancel }) => {
  registration={registration}
  eventName={event.name}
  />
+ {selectedFacultyId && (
+  <FacultyDetailsModal 
+   facultyId={selectedFacultyId} 
+   onClose={() => setSelectedFacultyId(null)} 
+  />
+ )}
  </div>
  </div>
  );

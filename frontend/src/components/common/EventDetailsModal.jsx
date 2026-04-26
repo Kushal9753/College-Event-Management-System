@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import EventService from '../../services/eventService';
 import { getUserData } from '../../utils/tokenHandler';
+import FacultyDetailsModal from './FacultyDetailsModal';
 
 const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  const [activeTab, setActiveTab] = useState('details');
@@ -9,7 +10,7 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  const [paymentsData, setPaymentsData] = useState({ data: [], totalPaidStudentsCount: 0 });
  const [loading, setLoading] = useState(false);
  const [attendedIds, setAttendedIds] = useState(event.attended || []);
- const [winners, setWinners] = useState(event.winners || [
+ const [winners, setWinners] = useState(event.winners?.length > 0 ? event.winners : [
  { position: 1, student: '' },
  { position: 2, student: '' },
  { position: 3, student: '' }
@@ -36,6 +37,7 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  const [showRejectInput, setShowRejectInput] = useState(false);
  const [showResultRejectInput, setShowResultRejectInput] = useState('');
  const [actionLoading, setActionLoading] = useState(null);
+ const [selectedFacultyId, setSelectedFacultyId] = useState(null);
 
  const userData = getUserData();
  const userRole = userData?.user?.role || userData?.role || 'student';
@@ -134,14 +136,17 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  await EventService.exportEventParticipants(event._id);
  };
 
- const handleArchive = async () => {
- if (window.confirm('Are you sure you want to archive this event?')) {
- await EventService.archiveEvent(event._id);
+ const handleDelete = async () => {
+ if (window.confirm('Are you absolutely sure you want to delete this event? This action cannot be undone and will delete all associated registrations, payments, and logs.')) {
+ try {
+ await EventService.deleteEvent(event._id);
  if (onUpdate) onUpdate();
  onClose();
+ } catch (err) {
+ alert(err.message || 'Failed to delete event');
+ }
  }
  };
-
  const organizerName = event.createdBy?.name || 'Unknown';
 
  /* ─── Student Registration Flow ─── */
@@ -287,7 +292,7 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  completed: 'bg-blue-100 text-blue-800',
  pending_approval: 'bg-purple-100 text-purple-800',
  published: 'bg-emerald-100 text-emerald-800',
- archived: 'bg-gray-100 text-gray-800',
+
  };
  return (
  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status] || styles.pending}`}>
@@ -363,20 +368,24 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  </div>
  </div>
 
- {/* Faculty Info — hidden from students */}
- {userRole !== 'student' && (
+  {/* Assigned Faculty Section */}
+  {true && (
  <div>
  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 border-b pb-2">Assigned Faculty</h4>
  {event.assignedFaculty?.length > 0 ? (
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
  {event.assignedFaculty.map(f => (
- <div key={f._id || f.email} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+ <div 
+  key={f._id || f.email} 
+  onClick={() => setSelectedFacultyId(f._id)}
+  className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer group active:scale-[0.98]"
+ >
  <div className="flex items-start gap-3">
- <div className="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg shrink-0">
+ <div className="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
  {f.name?.charAt(0).toUpperCase()}
  </div>
  <div className="min-w-0">
- <h5 className="text-sm font-bold text-gray-900 truncate">{f.name}</h5>
+ <h5 className="text-sm font-bold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">{f.name}</h5>
  <p className="text-xs text-indigo-600 font-medium">{f.designation || 'Faculty'}</p>
  <p className="text-xs text-gray-500 mt-1">{f.department || 'General'} • {f.collegeName || 'CDGI'}</p>
  </div>
@@ -639,12 +648,11 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M7 10l5 5m0 0l5-5m-5 5V3"/></svg>
  Export CSV
  </button>
- {event.status !== 'archived' && (
- <button onClick={handleArchive} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200 shadow-sm">
- <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
- Archive
+
+ <button onClick={handleDelete} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200 shadow-sm ml-auto">
+ <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+ Delete Event
  </button>
- )}
  </div>
  )}
  </div>
@@ -764,7 +772,10 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  <div className="flex-grow w-full">
  <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">{item.label}</label>
  <select
- value={winners.find(w => w.position === item.pos)?.student || ''}
+ value={(() => {
+   const w = winners.find(w => w.position === item.pos);
+   return w ? (w.student?._id || w.student) : '';
+ })()}
  onChange={(e) => handleWinnerChange(item.pos, e.target.value)}
  disabled={event.status === 'published' || event.status === 'pending_approval'}
  className="w-full bg-white border-none rounded-xl text-sm p-2 focus:ring-1 focus:ring-indigo-500">
@@ -804,11 +815,17 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
 
  {paymentStep !== 'gateway' && (
  <div className="p-6 border-t border-gray-100 bg-gray-50 shrink-0">
- <button onClick={onClose} className="w-full py-3 text-xs font-bold uppercase tracking-widest text-gray-600 bg-white border border-gray-200 rounded-2xl hover:shadow-lg transition-all active:scale-[0.99]">{paymentStep === 'done' ? 'Close' : 'Dismiss Modal'}</button>
+  <button onClick={onClose} className="w-full py-3 text-xs font-bold uppercase tracking-widest text-gray-600 bg-white border border-gray-200 rounded-2xl hover:shadow-lg transition-all active:scale-[0.99]">{paymentStep === 'done' ? 'Close' : 'Dismiss Modal'}</button>
  </div>
  )}
  </div>
- </div>
+ {selectedFacultyId && (
+  <FacultyDetailsModal 
+   facultyId={selectedFacultyId} 
+   onClose={() => setSelectedFacultyId(null)} 
+  />
+ )}
+</div>
  );
 };
 
@@ -832,7 +849,7 @@ const getActionColor = (action) => {
  case 'created': return 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]';
  case 'approved': return 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]';
  case 'rejected': return 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]';
- case 'archived': return 'bg-gray-500 shadow-[0_0_8px_rgba(107,114,128,0.5)]';
+
  case 'registered': return 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]';
  case 'winners_added': return 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]';
  default: return 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]';

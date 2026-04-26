@@ -3,6 +3,8 @@ import Notification from '../models/Notification.js';
 import EventLog from '../models/EventLog.js';
 import BankDetails from '../models/BankDetails.js';
 import Registration from '../models/Registration.js';
+import Payment from '../models/Payment.js';
+import Result from '../models/Result.js';
 import QRCode from 'qrcode';
 import { getIO } from '../socket.js';
 
@@ -480,6 +482,18 @@ export const processPayment = async (req, res, next) => {
     registration.paymentDate = new Date();
     await registration.save();
 
+    await Payment.create({
+      studentName: registration.studentName || req.user.name,
+      email: registration.email || req.user.email,
+      phone: registration.phone || req.user.phone,
+      studentId: registration.studentId,
+      eventId: registration.eventId,
+      amount: registration.amount,
+      paymentStatus: 'paid',
+      transactionId: txnId,
+      paymentMethod: paymentMethod,
+    });
+
     await EventLog.create({
       event: registration.eventId,
       action: 'payment_completed',
@@ -846,7 +860,8 @@ export const approveResults = async (req, res, next) => {
     const event = await Event.findById(req.params.id)
       .populate('registrations', '_id')
       .populate('assignedFaculty', '_id')
-      .populate('createdBy', '_id');
+      .populate('createdBy', '_id')
+      .populate('winners.student', 'name email enrollmentNumber phone branch year');
 
     if (!event) {
       res.status(404);
@@ -860,6 +875,38 @@ export const approveResults = async (req, res, next) => {
 
     event.status = 'published';
     await event.save();
+
+    // Create Result document
+    if (event.winners && event.winners.length > 0) {
+      const formattedWinners = event.winners.map(w => {
+        const posString = w.position === 1 ? '1st' : w.position === 2 ? '2nd' : '3rd';
+        return {
+          position: posString,
+          studentId: w.student._id,
+          name: w.student.name || 'Unknown',
+          rollNumber: w.student.enrollmentNumber || 'N/A',
+          branch: w.student.branch || 'N/A',
+          year: w.student.year || 'N/A',
+          email: w.student.email || 'N/A',
+          phone: w.student.phone || 'N/A',
+          prize: posString === '1st' ? '1st Prize' : posString === '2nd' ? '2nd Prize' : '3rd Prize',
+          score: 'N/A'
+        };
+      });
+
+      // Avoid creating duplicates if admin clicks approve again somehow
+      await Result.findOneAndUpdate(
+        { eventId: event._id },
+        {
+          eventId: event._id,
+          eventName: event.title,
+          winners: formattedWinners,
+          createdBy: req.user._id,
+          createdByModel: 'User'
+        },
+        { upsert: true, new: true }
+      );
+    }
 
     // Create notifications for all registered students
     const notifications = event.registrations.map((studentId) => ({
@@ -972,10 +1019,10 @@ export const rejectResults = async (req, res, next) => {
   }
 };
 
-// @desc    Archive an event
-// @route   PATCH /api/events/:id/archive
+// @desc    Delete an event
+// @route   DELETE /api/events/:id
 // @access  Private (Admin or Creator Faculty)
-export const archiveEvent = async (req, res, next) => {
+export const deleteEvent = async (req, res, next) => {
   try {
     const event = await Event.findById(req.params.id);
     if (!event) {
@@ -987,32 +1034,30 @@ export const archiveEvent = async (req, res, next) => {
       const isCreator = event.createdBy.toString() === req.user._id.toString();
       if (!isCreator) {
         res.status(403);
-        throw new Error('Only the creator or admin can archive this event');
+        throw new Error('Only the creator or admin can delete this event');
       }
     } else if (req.user.role !== 'admin') {
       res.status(403);
       throw new Error('Not authorized');
     }
 
-    event.status = 'archived';
-    await event.save();
+    // Optionally delete related records
+    await Registration.deleteMany({ eventId: event._id });
+    await Payment.deleteMany({ eventId: event._id });
+    await EventLog.deleteMany({ event: event._id });
 
-    await EventLog.create({
-      event: event._id,
-      action: 'archived',
-      performedBy: req.user._id,
-      details: 'Event was archived',
-    });
+    await event.deleteOne();
 
-    getIO().emit('event_archived', event);
-    getIO().emit('event_updated', event);
+    getIO().emit('event_deleted', event._id);
+    getIO().emit('event_updated', null); // Generic refresh signal if needed
 
-    res.status(200).json({ success: true, data: event });
+    res.status(200).json({ success: true, message: 'Event deleted successfully' });
   } catch (error) {
     if (!res.statusCode || res.statusCode === 200) res.status(400);
     next(error);
   }
 };
+
 
 // @desc    Export event participants to CSV
 // @route   GET /api/events/:id/export

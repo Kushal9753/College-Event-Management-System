@@ -8,17 +8,24 @@ const EventCard = ({ event, onRegister, onCancel, onViewDetails, layout = 'full'
  <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 ${layout === 'compact' ? 'scale-95 hover:scale-100' : ''}`}>
  <div className={layout === 'compact' ? 'p-4' : 'p-5'}>
  <div className="flex justify-between items-start mb-4">
- <span className={`px-2 py-1 rounded-md text-xs font-semibold uppercase tracking-wider ${
- event.category === 'technical' ? 'bg-blue-100 text-blue-800 ' :
- event.category === 'cultural' ? 'bg-purple-100 text-purple-800 ' :
- event.category === 'workshop' ? 'bg-green-100 text-green-800 ' :
- event.category === 'hackathon' ? 'bg-orange-100 text-orange-800 ' :
- event.category === 'seminar' ? 'bg-teal-100 text-teal-800 ' :
- event.category === 'sports' ? 'bg-red-100 text-red-800 ' :
- 'bg-gray-100 text-gray-800 '
- }`}>
- {event.category}
- </span>
+        <div className="flex items-center gap-2">
+          <span className={`px-2 py-1 rounded-md text-xs font-semibold uppercase tracking-wider ${
+            event.category === 'technical' ? 'bg-blue-100 text-blue-800 ' :
+            event.category === 'cultural' ? 'bg-purple-100 text-purple-800 ' :
+            event.category === 'workshop' ? 'bg-green-100 text-green-800 ' :
+            event.category === 'hackathon' ? 'bg-orange-100 text-orange-800 ' :
+            event.category === 'seminar' ? 'bg-teal-100 text-teal-800 ' :
+            event.category === 'sports' ? 'bg-red-100 text-red-800 ' :
+            'bg-gray-100 text-gray-800 '
+          }`}>
+            {event.category}
+          </span>
+          {event.status === 'completed' && (
+            <span className="px-2 py-1 rounded-md text-xs font-semibold uppercase tracking-wider bg-purple-100 text-purple-800 border border-purple-200">
+              Completed
+            </span>
+          )}
+        </div>
  {event.userStatus && (
  <span className={`text-xs font-medium ${
  event.userStatus === 'Registered' ? 'text-blue-600 ' :
@@ -65,26 +72,31 @@ const EventCard = ({ event, onRegister, onCancel, onViewDetails, layout = 'full'
  Details
  </button>
  )}
- {isRegistered ? (
- <button 
- onClick={() => onCancel?.(event.id || event._id)}
- className="flex-1 min-w-[80px] px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
- >
- Cancel
- </button>
- ) : (
- <button 
- onClick={() => onViewDetails(event)}
- className={`flex-1 min-w-[80px] px-3 py-2 text-sm font-medium rounded-lg transition-all ${
- event.userStatus === 'Attended'
- ? 'bg-green-100 text-green-600 cursor-default '
- : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
- }`}
- disabled={event.userStatus === 'Attended'}
- >
- {event.userStatus === 'Attended' ? 'Attended' : 'Register'}
- </button>
- )}
+        {isRegistered ? (
+          <button 
+            onClick={() => onCancel?.(event.id || event._id)}
+            className={`flex-1 min-w-[80px] px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+              event.status === 'completed' 
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                : 'text-red-600 bg-red-50 hover:bg-red-100'
+            }`}
+            disabled={event.status === 'completed'}
+          >
+            Cancel
+          </button>
+        ) : (
+          <button 
+            onClick={() => onViewDetails(event)}
+            className={`flex-1 min-w-[80px] px-3 py-2 text-sm font-medium rounded-lg transition-all ${
+              event.status === 'completed' || event.userStatus === 'Attended'
+                ? 'bg-gray-100 text-gray-600 cursor-default '
+                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+            }`}
+            disabled={event.status === 'completed' || event.userStatus === 'Attended'}
+          >
+            {event.status === 'completed' ? 'Completed' : event.userStatus === 'Attended' ? 'Attended' : 'Register'}
+          </button>
+        )}
  </div>
  </div>
  </div>
