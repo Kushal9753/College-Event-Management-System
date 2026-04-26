@@ -30,8 +30,13 @@ export const getStats = async (req, res, next) => {
     };
 
     eventStats.forEach((stat) => {
-      if (events.hasOwnProperty(stat._id)) {
-        events[stat._id] = stat.count;
+      const approvedStatuses = ['approved', 'ongoing', 'completed', 'pending_approval', 'published'];
+      if (approvedStatuses.includes(stat._id)) {
+        events.approved += stat.count;
+      } else if (stat._id === 'pending') {
+        events.pending += stat.count;
+      } else if (stat._id === 'rejected') {
+        events.rejected += stat.count;
       }
       events.total += stat.count;
     });

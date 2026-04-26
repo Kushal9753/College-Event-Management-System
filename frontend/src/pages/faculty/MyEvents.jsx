@@ -35,6 +35,9 @@ const MyEvents = () => {
       pending: { bg: 'bg-amber-500/10', text: 'text-amber-600', border: 'border-amber-500/20', dot: 'bg-amber-500' },
       completed: { bg: 'bg-blue-500/10', text: 'text-blue-600', border: 'border-blue-500/20', dot: 'bg-blue-500' },
       archived: { bg: 'bg-slate-500/10', text: 'text-slate-600', border: 'border-slate-500/20', dot: 'bg-slate-500' },
+      ongoing: { bg: 'bg-blue-500/10', text: 'text-blue-600', border: 'border-blue-500/20', dot: 'bg-blue-500' },
+      pending_approval: { bg: 'bg-orange-500/10', text: 'text-orange-600', border: 'border-orange-500/20', dot: 'bg-orange-500' },
+      published: { bg: 'bg-teal-500/10', text: 'text-teal-600', border: 'border-teal-500/20', dot: 'bg-teal-500' },
     };
     return configs[status?.toLowerCase()] || configs.pending;
   };
@@ -44,7 +47,7 @@ const MyEvents = () => {
     return (
       <div className={`px-3 py-1.5 flex items-center gap-2 rounded-full border ${config.bg} ${config.text} ${config.border}`}>
         <div className={`w-1.5 h-1.5 rounded-full ${config.dot} animate-pulse`} />
-        <span className="text-xs font-semibold tracking-wide uppercase">{status}</span>
+        <span className="text-xs font-semibold tracking-wide uppercase">{status?.replace('_', ' ')}</span>
       </div>
     );
   };
