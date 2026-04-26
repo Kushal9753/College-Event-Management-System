@@ -1,372 +1,268 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { 
+  IndianRupee, 
+  CreditCard, 
+  Wallet, 
+  Search, 
+  TrendingUp, 
+  CircleDollarSign, 
+  ArrowUpRight,
+  ShieldCheck,
+  CheckCircle2,
+  Clock
+} from 'lucide-react';
 
 const AdminPayments = () => {
- const [registrations, setRegistrations] = useState([]);
- const [payments, setPayments] = useState([]);
- const [bankDetails, setBankDetails] = useState(null);
- const [loading, setLoading] = useState(true);
- const [activeTab, setActiveTab] = useState('pending');
- const [bankForm, setBankForm] = useState({
- accountHolderName: '',
- accountNumber: '',
- ifscCode: '',
- bankName: '',
- upiId: '',
- });
- const [showBankForm, setShowBankForm] = useState(false);
- const [bankSaving, setBankSaving] = useState(false);
- const [actionLoading, setActionLoading] = useState(null);
- const [toast, setToast] = useState(null);
+  const [registrations, setRegistrations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('processed');
 
- const fetchData = async () => {
- try {
- setLoading(true);
- const [eventsRes, bankRes, paymentsRes] = await Promise.all([
- api.get('/events'),
- api.get('/bank').catch(() => ({ data: { data: null } })),
- api.get('/payments/all').catch(() => ({ data: { data: [] } })),
- ]);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const eventsRes = await api.get('/events');
+      const events = eventsRes.data.data || [];
+      
+      const allRegs = [];
+      for (const event of events) {
+        if (event.registrationFees > 0 && event.registrations?.length > 0) {
+          try {
+            const partRes = await api.get(`/events/${event._id}/participants`);
+            const participants = partRes.data?.data?.participants || [];
+            
+            participants.forEach(p => {
+              allRegs.push({
+                participantId: p._id,
+                participantName: p.name,
+                participantEmail: p.email,
+                participantEnrollment: p.enrollmentNumber,
+                registrationId: p.registrationId,
+                paymentStatus: p.paymentStatus,
+                transactionId: p.transactionId,
+                paymentMethod: p.paymentMethod || 'card',
+                paymentScreenshot: p.paymentScreenshot,
+                eventId: event._id,
+                eventTitle: event.title || event.name,
+                eventFees: event.registrationFees,
+                date: p.paymentDate ? new Date(p.paymentDate) : new Date(),
+              });
+            });
+          } catch (e) {
+            // skip error for this event
+          }
+        }
+      }
 
- // Extract all registrations from events
- const events = eventsRes.data.data || [];
- // Fetch registrations for all paid events (we need the registration model data)
- // We'll collect pending registrations by fetching participants for each event
- const allRegs = [];
- for (const event of events) {
- if (event.registrationFees > 0 && event.registrations?.length > 0) {
- try {
- const partRes = await api.get(`/events/${event._id}/participants`);
- const participants = partRes.data?.data?.participants || [];
- // We need the Registration model data, not just User data from event.registrations
- // However, participants endpoint returns User data from event.registrations array
- // We need a different approach: use the event ID to get registrations 
- participants.forEach(p => {
- allRegs.push({
- participantId: p._id,
- participantName: p.name,
- participantEmail: p.email,
- participantEnrollment: p.enrollmentNumber,
- registrationId: p.registrationId,
- paymentStatus: p.paymentStatus,
- paymentScreenshot: p.paymentScreenshot,
- eventId: event._id,
- eventTitle: event.title || event.name,
- eventFees: event.registrationFees,
- });
- });
- } catch (e) {
- // skip
- }
- }
- }
+      setRegistrations(allRegs.sort((a, b) => b.date - a.date));
+    } catch (err) {
+      console.error('Failed to fetch data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
- setBankDetails(bankRes.data?.data || null);
- setPayments(paymentsRes.data?.data || []);
- setRegistrations(allRegs);
- 
- // For bank form initialization
- if (bankRes.data?.data) {
- const bd = bankRes.data.data;
- setBankForm({
- accountHolderName: bd.accountHolderName || '',
- accountNumber: bd.accountNumber || '',
- ifscCode: bd.ifscCode || '',
- bankName: bd.bankName || '',
- upiId: bd.upiId || '',
- });
- }
- } catch (err) {
- console.error('Failed to fetch data:', err);
- } finally {
- setLoading(false);
- }
- };
+  useEffect(() => {
+    fetchData();
+  }, []);
 
- useEffect(() => {
- fetchData();
- }, []);
+  const processedPayments = registrations.filter(r => r.paymentStatus === 'paid');
+  const pendingPayments = registrations.filter(r => r.paymentStatus !== 'paid');
 
- const handleBankSave = async () => {
- try {
- setBankSaving(true);
- const res = await api.post('/bank', bankForm);
- setBankDetails(res.data.data);
- setShowBankForm(false);
- setToast({ type: 'success', text: 'Bank details saved successfully!' });
- setTimeout(() => setToast(null), 3000);
- } catch (err) {
- setToast({ type: 'error', text: err.response?.data?.message || 'Failed to save bank details' });
- setTimeout(() => setToast(null), 4000);
- } finally {
- setBankSaving(false);
- }
- };
+  const totalRevenue = processedPayments.reduce((acc, curr) => acc + (curr.eventFees || 0), 0);
+  const cardPayments = processedPayments.filter(r => r.paymentMethod === 'card').length;
+  const upiPayments = processedPayments.filter(r => r.paymentMethod === 'upi').length;
 
- const handleVerifyPayment = async (registrationId, action) => {
- try {
- setActionLoading(registrationId);
- await api.post(`/payments/verify/${registrationId}`, {
- transactionId: `TXN_${Date.now()}`,
- status: action === 'approve' ? 'success' : 'fail',
- });
- setToast({ type: 'success', text: `Payment ${action === 'approve' ? 'verified' : 'rejected'} successfully!` });
- setTimeout(() => setToast(null), 3000);
- fetchData();
- } catch (err) {
- setToast({ type: 'error', text: err.response?.data?.message || 'Failed to verify payment' });
- setTimeout(() => setToast(null), 4000);
- } finally {
- setActionLoading(null);
- }
- };
+  const displayData = (activeTab === 'processed' ? processedPayments : pendingPayments).filter(r => 
+    r.participantName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    r.eventTitle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    r.transactionId?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
- const getStatusColor = (status) => {
- switch (status) {
- case 'paid': return 'bg-green-100 text-green-700 ';
- case 'pending': return 'bg-yellow-100 text-yellow-700 ';
- case 'failed': return 'bg-red-100 text-red-700 ';
- default: return 'bg-gray-100 text-gray-700 ';
- }
- };
+  const getMethodIcon = (method) => {
+    if (method === 'card') return <CreditCard className="w-5 h-5 text-indigo-500" strokeWidth={2} />;
+    if (method === 'upi') return <Wallet className="w-5 h-5 text-emerald-500" strokeWidth={2} />;
+    return <IndianRupee className="w-5 h-5 text-blue-500" strokeWidth={2} />;
+  };
 
- if (loading) return <div className="p-8 text-center text-gray-500">Loading payment data...</div>;
-
- return (
- <div className="container mx-auto px-4 py-8 animate-fade-in">
- {/* Toast */}
- {toast && (
- <div className={`mb-6 px-4 py-3 rounded-xl flex items-center justify-between text-sm font-medium ${
- toast.type === 'success'
- ? 'bg-green-50 text-green-700 border border-green-200 '
- : 'bg-red-50 text-red-700 border border-red-200 '
- }`}>
- <span>{toast.text}</span>
- <button onClick={() => setToast(null)} className="ml-4 opacity-60 hover:opacity-100">&times;</button>
- </div>
- )}
-
- <div className="mb-6">
- <h1 className="text-2xl font-bold text-gray-900 ">Payments & Bank Details</h1>
- <p className="text-gray-600 mt-1">Manage bank details and verify student payments.</p>
- </div>
-
- {/* Bank Details Card */}
- <div className="bg-white rounded-2xl border border-gray-200 shadow-sm mb-8 overflow-hidden">
- <div className="px-6 py-4 bg-gradient-to-r from-indigo-500 to-blue-600 flex justify-between items-center">
- <h3 className="text-lg font-bold text-white flex items-center gap-2">
- <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
- Bank Details (for UPI QR Generation)
- </h3>
- <button
- onClick={() => setShowBankForm(!showBankForm)}
- className="px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-bold rounded-lg transition-colors"
- >
- {showBankForm ? 'Cancel' : bankDetails ? 'Edit' : 'Add Bank Details'}
- </button>
- </div>
-
- {bankDetails && !showBankForm ? (
- <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
- <div>
- <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Account Holder</p>
- <p className="font-bold text-gray-900 ">{bankDetails.accountHolderName}</p>
- </div>
- <div>
- <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Account Number</p>
- <p className="font-bold text-gray-900 ">{bankDetails.accountNumber}</p>
- </div>
- <div>
- <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">IFSC Code</p>
- <p className="font-bold text-gray-900 ">{bankDetails.ifscCode}</p>
- </div>
- <div>
- <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Bank Name</p>
- <p className="font-bold text-gray-900 ">{bankDetails.bankName}</p>
- </div>
- <div>
- <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">UPI ID</p>
- <p className="font-bold text-indigo-600 ">{bankDetails.upiId || 'Not set'}</p>
- </div>
- </div>
- ) : showBankForm ? (
- <div className="p-6">
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
- {['accountHolderName', 'accountNumber', 'ifscCode', 'bankName', 'upiId'].map(field => (
- <div key={field}>
- <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">
- {field.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}
- {field === 'upiId' && <span className="text-red-500 ml-1">*Required for QR</span>}
- </label>
- <input
- type="text"
- value={bankForm[field]}
- onChange={(e) => setBankForm(prev => ({ ...prev, [field]: e.target.value }))}
- className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-white text-sm text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
- placeholder={field === 'upiId' ? 'e.g. name@paytm' : ''}
- />
- </div>
- ))}
- </div>
- <div className="mt-4 flex justify-end">
- <button
- onClick={handleBankSave}
- disabled={bankSaving || !bankForm.accountHolderName || !bankForm.upiId}
- className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-500/25 disabled:opacity-50 transition-all"
- >
- {bankSaving ? 'Saving...' : 'Save Bank Details'}
- </button>
- </div>
- </div>
- ) : (
- <div className="p-8 text-center text-gray-500 ">
- <p className="font-medium">No bank details configured yet.</p>
- <p className="text-sm mt-1">Add bank details with UPI ID to enable payment QR codes for students.</p>
- </div>
- )}
- </div>
-
-  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-  <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-  <h3 className="font-bold text-gray-900 ">Payment Records</h3>
-  <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-  {['pending', 'verified'].map(tab => (
-  <button
-  key={tab}
-  onClick={() => setActiveTab(tab)}
-  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-  activeTab === tab
-  ? 'bg-white text-indigo-600 shadow-sm'
-  : 'text-gray-500 hover:text-gray-700 '
-  }`}
-  >
-  {tab === 'pending' ? 'Pending Verification' : 'Verified Payments'}
-  </button>
-  ))}
-  </div>
-  </div>
-
-  {activeTab === 'pending' ? (
-    registrations.length === 0 ? (
-      <div className="p-12 text-center text-gray-500 ">
-      <svg className="mx-auto h-12 w-12 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/>
-      </svg>
-      <p className="font-medium">No pending registrations</p>
-      <p className="text-sm mt-1">Students will appear here once they register for paid events.</p>
+  if (loading) {
+    return (
+      <div className="min-h-[80vh] flex flex-col items-center justify-center animate-fade-in">
+         <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+         <p className="text-gray-500 font-bold tracking-widest uppercase text-sm">Synchronizing Ledger...</p>
       </div>
-    ) : (
-      <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200 ">
-      <thead className="bg-gray-50 ">
-      <tr>
-      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
-      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Event</th>
-      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Fees</th>
-      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Proof (SS)</th>
-      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-      <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
-      </tr>
-      </thead>
-      <tbody className="divide-y divide-gray-100 ">
-      {registrations.filter(r => r.paymentStatus !== 'paid').map(r => (
-      <tr key={`${r.eventId}-${r.participantId}`} className="hover:bg-gray-50 transition-colors text-sm">
-      <td className="px-6 py-4">
-      <div className="font-bold text-gray-900 ">{r.participantName}</div>
-      <div className="text-xs text-gray-500">{r.participantEmail}</div>
-      </td>
-      <td className="px-6 py-4 text-gray-900 ">{r.eventTitle}</td>
-      <td className="px-6 py-4 font-bold text-indigo-600 ">₹{r.eventFees}</td>
-      <td className="px-6 py-4">
-        {r.paymentScreenshot ? (
-          <a 
-            href={`${import.meta.env.VITE_API_URL || ''}${r.paymentScreenshot}`} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-indigo-600 hover:underline flex items-center gap-1 font-medium"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-            View SS
-          </a>
-        ) : <span className="text-gray-400 italic">No proof yet</span>}
-      </td>
-      <td className="px-6 py-4">
-      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${getStatusColor(r.paymentStatus)}`}>
-      {r.paymentStatus}
-      </span>
-      </td>
-      <td className="px-6 py-4 text-right">
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={() => handleVerifyPayment(r.registrationId, 'approve')}
-            disabled={actionLoading === r.registrationId}
-            className="p-1 px-3 bg-green-600 hover:bg-green-700 text-white text-[10px] font-bold rounded shadow-sm hover:shadow transition-all disabled:opacity-50"
-          >
-            Approve
-          </button>
-          <button
-            onClick={() => handleVerifyPayment(r.registrationId, 'reject')}
-            disabled={actionLoading === r.registrationId}
-            className="p-1 px-3 bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold rounded shadow-sm hover:shadow transition-all disabled:opacity-50"
-          >
-            Reject
-          </button>
+    );
+  }
+
+  return (
+    <div className="container mx-auto max-w-7xl px-4 py-8 animate-fade-in">
+      
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6">
+        <div>
+          <h1 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-700 to-indigo-400 mb-2 flex items-center gap-3">
+             <ShieldCheck size={36} className="text-indigo-600 shrink-0" strokeWidth={2.5} />
+             Payment Gateway Ledger
+          </h1>
+          <p className="text-gray-500 font-medium tracking-wide">Monitor real-time simulated transactions and revenue flows.</p>
         </div>
-      </td>
-      </tr>
-      ))}
-      </tbody>
-      </table>
       </div>
-    )
-  ) : (
-    payments.length === 0 ? (
-    <div className="p-12 text-center text-gray-500 ">
-    <svg className="mx-auto h-12 w-12 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/>
-    </svg>
-    <p className="font-medium">No payment records yet</p>
-    <p className="text-sm mt-1">Verified payments will appear here.</p>
+
+      {/* Metrics Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-[0_5px_20px_rgb(0,0,0,0.03)] relative overflow-hidden group hover:shadow-md transition-all">
+          <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-emerald-50 rounded-full group-hover:scale-150 transition-transform duration-500 ease-out z-0"></div>
+          <div className="relative z-10">
+            <div className="w-14 h-14 bg-emerald-100/50 rounded-2xl flex items-center justify-center mb-6 border border-emerald-100">
+               <TrendingUp className="w-7 h-7 text-emerald-600" strokeWidth={2.5} />
+            </div>
+            <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Total Revenue</p>
+            <h2 className="text-4xl font-black text-gray-900 tracking-tighter">₹{totalRevenue.toLocaleString()}</h2>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-[0_5px_20px_rgb(0,0,0,0.03)] relative overflow-hidden group hover:shadow-md transition-all">
+          <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-indigo-50 rounded-full group-hover:scale-150 transition-transform duration-500 ease-out z-0"></div>
+          <div className="relative z-10">
+            <div className="w-14 h-14 bg-indigo-100/50 rounded-2xl flex items-center justify-center mb-6 border border-indigo-100">
+               <CheckCircle2 className="w-7 h-7 text-indigo-600" strokeWidth={2.5} />
+            </div>
+            <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Processed TXNs</p>
+            <div className="flex items-end gap-3 tracking-tighter">
+              <h2 className="text-4xl font-black text-gray-900">{processedPayments.length}</h2>
+              <span className="text-sm font-bold text-indigo-600 mb-1 flex items-center"><ArrowUpRight size={16} /></span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-[0_5px_20px_rgb(0,0,0,0.03)] relative overflow-hidden group hover:shadow-md transition-all flex flex-col justify-between">
+          <div className="relative z-10 w-full h-full flex flex-col justify-center">
+             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Payment Methods Breakdown</p>
+             <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                   <div className="flex items-center gap-3">
+                     <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                       <CreditCard size={20} strokeWidth={2.5} />
+                     </div>
+                     <span className="font-bold text-gray-700 text-sm">Credit / Debit</span>
+                   </div>
+                   <span className="font-black text-gray-900">{cardPayments}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                   <div className="flex items-center gap-3">
+                     <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+                       <Wallet size={20} strokeWidth={2.5} />
+                     </div>
+                     <span className="font-bold text-gray-700 text-sm">UPI / BHIM</span>
+                   </div>
+                   <span className="font-black text-gray-900">{upiPayments}</span>
+                </div>
+             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Table Area */}
+      <div className="bg-white rounded-[2.5rem] p-4 sm:p-8 border border-gray-100 shadow-[0_5px_20px_rgb(0,0,0,0.02)]">
+         
+         <div className="flex flex-col lg:flex-row justify-between items-center gap-6 mb-8">
+            <div className="flex bg-gray-100 p-1.5 rounded-2xl w-full lg:w-auto overflow-x-auto">
+               <button 
+                 onClick={() => setActiveTab('processed')}
+                 className={`flex-1 lg:flex-none px-6 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap flex items-center justify-center gap-2 ${activeTab === 'processed' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
+               >
+                 <CheckCircle2 size={16} strokeWidth={2.5} /> Processed
+                 <span className="bg-gray-100 text-gray-600 text-[10px] px-2 py-0.5 rounded-full ml-1">{processedPayments.length}</span>
+               </button>
+               <button 
+                 onClick={() => setActiveTab('pending')}
+                 className={`flex-1 lg:flex-none px-6 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap flex items-center justify-center gap-2 ${activeTab === 'pending' ? 'bg-white text-amber-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
+               >
+                 <Clock size={16} strokeWidth={2.5} /> Pending Actions
+                 <span className="bg-gray-100 text-gray-600 text-[10px] px-2 py-0.5 rounded-full ml-1">{pendingPayments.length}</span>
+               </button>
+            </div>
+
+            <div className="relative w-full lg:w-80 group shrink-0">
+               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors" size={18} strokeWidth={2.5} />
+               <input 
+                 type="text" 
+                 placeholder="Search name, TXN ID, event..." 
+                 value={searchTerm}
+                 onChange={(e) => setSearchTerm(e.target.value)}
+                 className="w-full bg-gray-50/50 border border-gray-200 rounded-full pl-12 pr-4 py-3 text-sm font-bold text-gray-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-shadow"
+               />
+            </div>
+         </div>
+
+         {displayData.length === 0 ? (
+            <div className="text-center py-20 bg-gray-50/50 rounded-3xl border border-dashed border-gray-200">
+               <div className="w-20 h-20 bg-white shadow-sm rounded-[1.5rem] flex items-center justify-center mx-auto mb-5">
+                  <CircleDollarSign className="w-10 h-10 text-gray-300" strokeWidth={1.5} />
+               </div>
+               <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-1">No Transactions Found</h3>
+               <p className="text-gray-500 text-sm">There are no records matching your current filters.</p>
+            </div>
+         ) : (
+            <div className="overflow-x-auto custom-scrollbar">
+               <table className="w-full text-left border-separate border-spacing-y-3 shrink-0">
+                  <thead>
+                    <tr>
+                       <th className="px-6 pb-2 text-[11px] font-black tracking-widest uppercase text-gray-400">Student & Event</th>
+                       <th className="px-6 pb-2 text-[11px] font-black tracking-widest uppercase text-gray-400">Transaction Details</th>
+                       <th className="px-6 pb-2 text-[11px] font-black tracking-widest uppercase text-gray-400">Method</th>
+                       <th className="px-6 pb-2 text-[11px] font-black tracking-widest uppercase text-gray-400 text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                     {displayData.map((reg, idx) => (
+                       <tr key={reg.registrationId || idx} className="group hover:bg-gray-50/80 transition-colors">
+                          <td className="px-6 py-4 bg-white border border-gray-100 rounded-l-2xl shadow-[0_2px_10px_rgb(0,0,0,0.01)] group-hover:border-indigo-100/50 transition-colors">
+                             <div className="font-bold text-gray-900 truncate max-w-[200px]">{reg.participantName}</div>
+                             <div className="text-xs text-gray-500 font-medium truncate max-w-[200px] mt-0.5">{reg.eventTitle}</div>
+                          </td>
+                          <td className="px-6 py-4 bg-white border-y border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.01)] group-hover:border-indigo-100/50 transition-colors">
+                             <div className="flex items-center gap-2">
+                               {reg.paymentStatus === 'paid' ? (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                               ) : (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                               )}
+                               <span className="font-bold text-gray-900 text-sm">
+                                  {reg.transactionId ? (
+                                    <span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">{reg.transactionId}</span>
+                                  ) : 'N/A'}
+                               </span>
+                             </div>
+                             <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1.5">
+                                {new Date(reg.date).toLocaleString()}
+                             </div>
+                          </td>
+                          <td className="px-6 py-4 bg-white border-y border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.01)] group-hover:border-indigo-100/50 transition-colors">
+                             {reg.paymentStatus === 'paid' ? (
+                               <div className="flex items-center gap-2 text-xs font-bold text-gray-600 uppercase tracking-widest">
+                                 {getMethodIcon(reg.paymentMethod)}
+                                 {reg.paymentMethod}
+                               </div>
+                             ) : (
+                               <span className="text-xs font-bold text-amber-600 uppercase tracking-widest flex items-center gap-1">
+                                 Pending Verification
+                               </span>
+                             )}
+                          </td>
+                          <td className="px-6 py-4 bg-white border border-gray-100 rounded-r-2xl shadow-[0_2px_10px_rgb(0,0,0,0.01)] text-right group-hover:border-indigo-100/50 transition-colors">
+                             <span className="text-lg font-black text-indigo-600">₹{reg.eventFees}</span>
+                          </td>
+                       </tr>
+                     ))}
+                  </tbody>
+               </table>
+            </div>
+         )}
+      </div>
     </div>
-    ) : (
-    <div className="overflow-x-auto">
-    <table className="min-w-full divide-y divide-gray-200 ">
-    <thead className="bg-gray-50 ">
-    <tr>
-    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
-    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Event</th>
-    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</th>
-    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Verified By</th>
-    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
-    </tr>
-    </thead>
-    <tbody className="divide-y divide-gray-100 ">
-    {payments.map(p => (
-    <tr key={p._id} className="hover:bg-gray-50 transition-colors">
-    <td className="px-6 py-4">
-    <div className="text-sm font-bold text-gray-900 ">{p.studentId?.name || p.studentName}</div>
-    <div className="text-xs text-gray-500">{p.studentId?.email || p.email}</div>
-    </td>
-    <td className="px-6 py-4 text-sm text-gray-900 ">{p.eventId?.title}</td>
-    <td className="px-6 py-4 text-sm font-bold text-gray-900 ">₹{p.amount}</td>
-    <td className="px-6 py-4">
-    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${getStatusColor(p.paymentStatus)}`}>
-    {p.paymentStatus}
-    </span>
-    </td>
-    <td className="px-6 py-4 text-sm text-gray-500">{p.verifiedBy?.name}</td>
-    <td className="px-6 py-4 text-xs text-gray-500">{new Date(p.createdAt).toLocaleDateString()}</td>
-    </tr>
-    ))}
-    </tbody>
-    </table>
-    </div>
-    )
-  )}
-  </div>
- </div>
- );
+  );
 };
 
 export default AdminPayments;

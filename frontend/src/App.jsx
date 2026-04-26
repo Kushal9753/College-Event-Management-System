@@ -22,7 +22,6 @@ const AdminPayments = lazy(() => import('./pages/admin/Payments'));
 const AdminResults = lazy(() => import('./pages/admin/Results'));
 const AdminFeedback = lazy(() => import('./pages/admin/Feedback'));
 const AdminReports = lazy(() => import('./pages/admin/Reports'));
-const AdminSettings = lazy(() => import('./pages/admin/Settings'));
 const AdminCommunication = lazy(() => import('./pages/admin/Communication'));
 const AdminScheduling = lazy(() => import('./pages/admin/Scheduling'));
 
@@ -98,7 +97,6 @@ function App() {
  <Route path="reports" element={<AdminReports />} />
  <Route path="communication" element={<AdminCommunication />} />
  <Route path="scheduling" element={<AdminScheduling />} />
- <Route path="settings" element={<AdminSettings />} />
  </Route>
 
  {/* ─── Faculty panel — nested under /faculty ─── */}

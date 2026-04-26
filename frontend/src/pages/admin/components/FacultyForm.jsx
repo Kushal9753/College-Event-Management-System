@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { departments, expertiseAreas } from '../../../services/facultyService';
+import { X, Loader2 } from 'lucide-react';
 
 const emptyForm = { name: '', email: '', phone: '', department: '', expertise: '', collegeName: '' };
 
@@ -67,9 +68,7 @@ const FacultyForm = ({ isOpen, onClose, onSubmit, initialData, isSubmitting }) =
  onClick={onClose}
  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
  >
- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
- <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
- </svg>
+ <X className="w-5 h-5" />
  </button>
  </div>
 
@@ -182,10 +181,7 @@ const FacultyForm = ({ isOpen, onClose, onSubmit, initialData, isSubmitting }) =
  className="flex-1 px-4 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:bg-blue-400 transition-colors flex items-center justify-center"
  >
  {isSubmitting ? (
- <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
- </svg>
+ <Loader2 className="animate-spin h-5 w-5 text-white" />
  ) : isEditing ? 'Update' : 'Add Faculty'}
  </button>
  </div>

@@ -7,6 +7,7 @@ import Payment from '../models/Payment.js';
 import Result from '../models/Result.js';
 import QRCode from 'qrcode';
 import { getIO } from '../socket.js';
+import Result from '../models/Result.js';
 
 // @desc    Create a new event
 // @route   POST /api/events/create
@@ -861,7 +862,7 @@ export const approveResults = async (req, res, next) => {
       .populate('registrations', '_id')
       .populate('assignedFaculty', '_id')
       .populate('createdBy', '_id')
-      .populate('winners.student', 'name email enrollmentNumber phone branch year');
+      .populate('winners.student', 'name email enrollmentNumber phone collegeName');
 
     if (!event) {
       res.status(404);
@@ -876,37 +877,30 @@ export const approveResults = async (req, res, next) => {
     event.status = 'published';
     await event.save();
 
-    // Create Result document
-    if (event.winners && event.winners.length > 0) {
-      const formattedWinners = event.winners.map(w => {
-        const posString = w.position === 1 ? '1st' : w.position === 2 ? '2nd' : '3rd';
-        return {
-          position: posString,
-          studentId: w.student._id,
-          name: w.student.name || 'Unknown',
-          rollNumber: w.student.enrollmentNumber || 'N/A',
-          branch: w.student.branch || 'N/A',
-          year: w.student.year || 'N/A',
-          email: w.student.email || 'N/A',
-          phone: w.student.phone || 'N/A',
-          prize: posString === '1st' ? '1st Prize' : posString === '2nd' ? '2nd Prize' : '3rd Prize',
-          score: 'N/A'
-        };
-      });
+    const positionMap = { 1: '1st', 2: '2nd', 3: '3rd' };
+    const resultWinners = event.winners.map(w => ({
+      position: positionMap[w.position] || `${w.position}th`,
+      studentId: w.student._id,
+      name: w.student.name || 'Unknown',
+      rollNumber: w.student.enrollmentNumber || 'N/A',
+      branch: w.student.collegeName || 'N/A',
+      year: 'N/A',
+      email: w.student.email || 'N/A',
+      phone: w.student.phone || 'N/A',
+      prize: event.prize || 'Certificate'
+    }));
 
-      // Avoid creating duplicates if admin clicks approve again somehow
-      await Result.findOneAndUpdate(
-        { eventId: event._id },
-        {
-          eventId: event._id,
-          eventName: event.title,
-          winners: formattedWinners,
-          createdBy: req.user._id,
-          createdByModel: 'User'
-        },
-        { upsert: true, new: true }
-      );
-    }
+    await Result.findOneAndUpdate(
+      { eventId: event._id },
+      {
+        eventId: event._id,
+        eventName: event.title,
+        winners: resultWinners,
+        createdBy: req.user._id,
+        createdByModel: req.user.role === 'admin' ? 'User' : 'Faculty' // 'admin' comes as User in DB
+      },
+      { upsert: true, new: true }
+    );
 
     // Create notifications for all registered students
     const notifications = event.registrations.map((studentId) => ({

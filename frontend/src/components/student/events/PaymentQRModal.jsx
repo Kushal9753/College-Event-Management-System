@@ -1,136 +1,152 @@
 import React, { useState } from 'react';
-import { useEvents } from '../../../context/EventContext';
+import api from '../../../services/api';
+import { CreditCard, Wallet, Lock, CheckCircle2, ChevronRight, Fingerprint, RefreshCcw } from 'lucide-react';
 
 const PaymentQRModal = ({ isOpen, onClose, registration, eventName }) => {
-  const { submitPaymentProof } = useEvents();
-  const [file, setFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [preview, setPreview] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState('card');
+  const [methodOptions, setMethodOptions] = useState([
+    { id: 'card', name: 'Credit/Debit Card', icon: CreditCard },
+    { id: 'upi', name: 'UPI / BHIM', icon: Wallet },
+  ]);
+  const [formData, setFormData] = useState({
+    cardNumber: '4111 1111 1111 1111',
+    cardExpiry: '12/28',
+    cardCvv: '123',
+    cardName: 'JOHN DOE',
+    upiId: 'johndoe@paytm'
+  });
+  const [processing, setProcessing] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   if (!isOpen || !registration) return null;
 
-  const { amount, qrCode, _id } = registration;
+  const { amount, _id } = registration;
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setPreview(URL.createObjectURL(selectedFile));
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!file) {
-      alert('Please select a screenshot first');
-      return;
-    }
-
-    setUploading(true);
-    const formData = new FormData();
-    formData.append('screenshot', file);
-
+  const handleProcessPayment = async () => {
+    setProcessing(true);
     try {
-      await submitPaymentProof(_id, formData);
-      alert('Payment proof submitted successfully! Admin will verify it soon.');
-      onClose();
+      const payload = {
+        paymentMethod,
+        ...formData
+      };
+      // Short delay for realistic feel
+      await new Promise(r => setTimeout(r, 1500));
+      await api.post(`/events/registration/${_id}/pay`, payload);
+      
+      setSuccess(true);
+      setTimeout(() => {
+        onClose();
+        setSuccess(false);
+        setProcessing(false);
+      }, 2500);
     } catch (err) {
-      console.error(err);
-    } finally {
-      setUploading(false);
+      console.error('Payment failed', err);
+      alert(err.response?.data?.message || 'Payment simulation failed');
+      setProcessing(false);
     }
   };
+
+  const handleInputChange = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-gray-100 overflow-hidden animate-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-gray-100 flex flex-col items-center">
         
-        {/* Header */}
-        <div className="p-6 text-center border-b border-gray-100 bg-gray-50/50 ">
-          <h3 className="text-xl font-bold text-gray-900 ">Registration Payment</h3>
-          <p className="text-sm text-gray-500 mt-1">Complete your registration for {eventName}</p>
-        </div>
-
-        <div className="p-8 flex flex-col items-center max-h-[70vh] overflow-y-auto custom-scrollbar">
-          {/* Amount Display */}
-          <div className="mb-6 text-center">
-            <span className="text-gray-500 text-xs font-semibold uppercase tracking-widest block mb-1">Amount to Pay</span>
-            <span className="text-4xl font-black text-indigo-600 ">₹{amount}</span>
+        {success ? (
+          <div className="p-12 text-center w-full flex flex-col items-center">
+             <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6 animate-bounce">
+                <CheckCircle2 size={48} strokeWidth={2.5} />
+             </div>
+             <h2 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">Payment Successful!</h2>
+             <p className="text-gray-500 font-medium tracking-wide">You are fully registered for the event.</p>
           </div>
-
-          {/* QR Code Container */}
-          <div className="relative group mb-8">
-            <div className="absolute -inset-4 bg-indigo-500/10 rounded-[2.5rem] blur-xl opacity-50 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-            <div className="relative p-4 bg-white rounded-[2rem] shadow-xl border border-gray-100">
-              <img 
-                src={qrCode} 
-                alt="Payment QR Code" 
-                className="w-48 h-48 rounded-xl"
-              />
+        ) : (
+          <>
+            <div className="w-full bg-slate-900 text-white p-8 relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+               <div className="relative z-10">
+                 <div className="flex items-center gap-2 text-indigo-300 font-bold text-xs uppercase tracking-widest mb-4">
+                   <Lock size={12} strokeWidth={3} /> Secure Checkout
+                 </div>
+                 <div className="flex items-end justify-between">
+                    <div>
+                      <p className="text-slate-400 font-medium mb-1">Payable Amount</p>
+                      <p className="text-5xl font-black tracking-tighter">₹{amount}</p>
+                    </div>
+                    <div className="text-right">
+                       <p className="text-slate-400 font-medium mb-1 truncate max-w-[150px]">{eventName}</p>
+                       <p className="text-sm font-bold text-white tracking-wide">Registration Fee</p>
+                    </div>
+                 </div>
+               </div>
             </div>
-          </div>
 
-          {/* Screenshot Upload Section */}
-          <div className="w-full space-y-4">
-            <div className="text-center">
-              <label className="block text-sm font-bold text-gray-700 mb-2">Upload Payment Screenshot</label>
-              <div className="relative group cursor-pointer">
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleFileChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                />
-                <div className={`p-6 border-2 border-dashed rounded-2xl transition-all ${preview ? 'border-green-400 bg-green-50' : 'border-gray-200 hover:border-indigo-400 bg-gray-50'}`}>
-                  {preview ? (
-                    <div className="flex flex-col items-center">
-                      <img src={preview} alt="Screenshot preview" className="h-32 object-contain rounded-lg mb-2 shadow-sm" />
-                      <span className="text-xs text-green-600 font-medium">Click or drag to change image</span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center">
-                      <svg className="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span className="text-xs text-gray-500 font-medium text-center">Tap here to upload your payment proof image (Screenshot)</span>
-                    </div>
-                  )}
-                </div>
+            <div className="w-full p-8 bg-slate-50 border-b border-gray-100">
+              <div className="flex bg-gray-200/50 p-1.5 rounded-2xl">
+                {methodOptions.map(m => {
+                   const Icon = m.icon;
+                   const active = paymentMethod === m.id;
+                   return (
+                     <button 
+                       key={m.id}
+                       onClick={() => setPaymentMethod(m.id)}
+                       className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${active ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                     >
+                       <Icon size={16} strokeWidth={active ? 2.5 : 2} /> {m.name}
+                     </button>
+                   );
+                })}
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 ">
-              <div className="p-2 bg-blue-100 rounded-full shrink-0">
-                <svg className="w-4 h-4 text-blue-600 " fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-              </div>
-              <p className="text-[11px] text-blue-800 font-medium leading-relaxed">
-                Scan QR $\rightarrow$ Pay $\rightarrow$ Take Screenshot $\rightarrow$ Upload above and click "Submit Proof".
-              </p>
+            <div className="w-full p-8">
+               {paymentMethod === 'card' ? (
+                 <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div>
+                      <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Card Number</label>
+                      <input type="text" value={formData.cardNumber} onChange={e => handleInputChange('cardNumber', e.target.value)} className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 tracking-widest" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-5">
+                      <div>
+                        <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Expiry</label>
+                        <input type="text" value={formData.cardExpiry} onChange={e => handleInputChange('cardExpiry', e.target.value)} className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 tracking-widest" />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">CVV</label>
+                        <input type="password" value={formData.cardCvv} onChange={e => handleInputChange('cardCvv', e.target.value)} className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 tracking-widest" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Name on Card</label>
+                      <input type="text" value={formData.cardName} onChange={e => handleInputChange('cardName', e.target.value)} className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 tracking-widest uppercase" />
+                    </div>
+                 </div>
+               ) : (
+                 <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
+                    <div className="text-center p-6 bg-indigo-50/50 border border-indigo-100 rounded-3xl">
+                       <Fingerprint className="w-12 h-12 text-indigo-400 mx-auto mb-4" strokeWidth={1} />
+                       <label className="block text-xs font-bold text-indigo-900 uppercase tracking-widest mb-3">Enter your UPI ID</label>
+                       <input type="text" value={formData.upiId} onChange={e => handleInputChange('upiId', e.target.value)} className="w-full bg-white border border-indigo-100 rounded-xl px-4 py-3.5 text-center text-sm font-bold text-indigo-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-sm" placeholder="username@bank" />
+                    </div>
+                 </div>
+               )}
             </div>
-          </div>
-        </div>
 
-        {/* Footer */}
-        <div className="p-6 bg-gray-50 flex gap-3 border-t border-gray-100">
-          <button 
-            onClick={onClose}
-            className="flex-1 py-3 px-4 text-sm font-bold text-gray-600 hover:text-gray-900 bg-white rounded-xl border border-gray-200 transition-all active:scale-[0.98]"
-          >
-            Cancel
-          </button>
-          <button 
-            onClick={handleUpload}
-            disabled={!file || uploading}
-            className={`flex-1 py-3 px-4 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-500/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${(!file || uploading) ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {uploading ? (
-              <><div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div> Submitting...</>
-            ) : 'Submit Proof'}
-          </button>
-        </div>
+            <div className="w-full p-8 pt-0 flex gap-4">
+               <button onClick={onClose} disabled={processing} className="flex-1 py-4 text-sm font-bold text-gray-500 hover:text-gray-800 bg-gray-100/50 hover:bg-gray-100 rounded-2xl transition-all">Cancel</button>
+               <button 
+                 onClick={handleProcessPayment} 
+                 disabled={processing}
+                 className="flex-[2] flex items-center justify-center gap-2 py-4 text-sm font-bold text-white bg-slate-900 hover:bg-black rounded-2xl shadow-[0_8px_20px_rgb(0,0,0,0.15)] hover:shadow-[0_10px_25px_rgb(0,0,0,0.25)] transition-all disabled:opacity-50"
+               >
+                 {processing ? <><RefreshCcw className="w-5 h-5 animate-spin" /> Processing...</> : <><Fingerprint className="w-5 h-5" /> Pay ₹{amount} Securely</>}
+               </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 };
-
 
 export default PaymentQRModal;
