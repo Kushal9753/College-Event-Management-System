@@ -13,44 +13,71 @@ import { getIO } from '../socket.js';
 // @access  Private (Admin or Faculty)
 export const createEvent = async (req, res, next) => {
   try {
-    const { title, name, venue, location, date, time, duration, category, description, assignedFaculty, registrationFees, prize } = req.body;
+    const {
+      name,
+      title,
+      venue,
+      location,
+      organizer,
+      date,
+      time,
+      duration,
+      category,
+      description,
+      assignedFaculty,
+      registrationFees,
+      rewardType = 'none',
+      prizes = [],
+    } = req.body;
 
     const eventTitle = title || name;
     const eventVenue = venue || location;
 
     // Validate required fields
-    if (!eventTitle || !eventVenue || !date || !description || registrationFees === undefined || !prize) {
+    if (!eventTitle || !eventVenue || !date || !description || registrationFees === undefined) {
       res.status(400);
-      throw new Error('Please provide all required fields: title, venue, date, description, registrationFees, prize');
+      throw new Error('Please provide all required fields: title, venue, date, description, registrationFees');
     }
 
-    // Set status based on role: admin → approved, faculty → pending
-    let status = 'pending';
-    if (req.user.role === 'admin') {
-      status = 'approved';
-    } else if (req.user.role === 'faculty') {
-      status = 'pending';
+    // Generate a textual summary for 'prize' field (backward compatibility)
+    let prizeSummary = '';
+    if (rewardType === 'prize') {
+      prizeSummary = prizes && prizes.length > 0 
+        ? prizes.map(p => {
+          const pos = p.position === 1 ? '1st' : p.position === 2 ? '2nd' : p.position === 3 ? '3rd' : `${p.position}th`;
+          return `${pos}: ₹${p.amount}`;
+        }).join(', ')
+        : 'Prize Money';
+    } else if (rewardType === 'certificate') {
+      prizeSummary = 'e-Certificate';
     } else {
-      res.status(403);
-      throw new Error('Not authorized to create events');
+      prizeSummary = 'None';
     }
 
-    let assignedFaculties = Array.isArray(assignedFaculty) ? assignedFaculty : (assignedFaculty ? [assignedFaculty] : []);
-    if (req.user.role === 'faculty' && !assignedFaculties.includes(req.user._id.toString())) {
-      assignedFaculties.push(req.user._id);
+    // Convert string array to valid ObjectIds if provided
+    let assignedFaculties = [];
+    if (assignedFaculty && Array.isArray(assignedFaculty)) {
+      assignedFaculties = assignedFaculty;
     }
+
+    // Faculty: only their events start as pending. Admin: approved by default.
+    const status = req.user.role === 'admin' ? 'approved' : 'pending';
 
     const event = await Event.create({
       title: eventTitle,
       venue: eventVenue,
+      organizer,
       date,
       time,
       duration,
       category,
       description,
       registrationFees,
-      prize,
+      prize: prizeSummary,
+      rewardType,
+      prizeDetails: prizes,
       createdBy: req.user._id,
+      createdByModel: req.user.role === 'faculty' ? 'Faculty' : 'User',
       role: req.user.role,
       assignedFaculty: assignedFaculties,
       status,
@@ -136,7 +163,7 @@ export const getMyRegistrations = async (req, res, next) => {
 export const getEventById = async (req, res, next) => {
   try {
     const event = await Event.findById(req.params.id)
-      .populate('createdBy', 'name email enrollmentNumber')
+      .populate('createdBy', 'name email enrollmentNumber designation department')
       .populate('assignedFaculty', 'name email phone designation department collegeName');
 
     if (!event) {
@@ -202,7 +229,7 @@ export const getAllEvents = async (req, res, next) => {
     if (req.user.role !== 'student' && status) query.status = status;
 
     const events = await Event.find(query)
-      .populate('createdBy', 'name email enrollmentNumber')
+      .populate('createdBy', 'name email enrollmentNumber designation department')
       .populate('assignedFaculty', 'name email phone designation department collegeName')
       .populate('registrations', 'name email')
       .sort({ date: 1 }); // Sorted by earliest date first
@@ -250,7 +277,7 @@ export const getPendingEvents = async (req, res, next) => {
     }
 
     const events = await Event.find({ status: 'pending' })
-      .populate('createdBy', 'name enrollmentNumber')
+      .populate('createdBy', 'name email enrollmentNumber designation department')
       .populate('assignedFaculty', 'name email phone designation department collegeName')
       .sort({ createdAt: -1 });
 
@@ -801,7 +828,7 @@ export const addWinners = async (req, res, next) => {
     }
 
     // Validation: Only if completed
-    if (event.status !== 'completed' && event.status !== 'pending_approval') {
+    if (event.status !== 'completed' && event.status !== 'pending_approval' && event.status !== 'published') {
       res.status(400);
       throw new Error('Winners can only be added when event status is "completed".');
     }
@@ -814,30 +841,73 @@ export const addWinners = async (req, res, next) => {
 
     // Replace winners
     event.winners = winners;
-    // Set status to pending_approval for admin validation
-    event.status = 'pending_approval';
+    // Directly publish the results
+    event.status = 'published';
     await event.save();
 
     const populated = await Event.findById(event._id)
       .populate('createdBy', 'name email')
       .populate('assignedFaculty', 'name email phone designation department collegeName')
-      .populate('winners.student', 'name email enrollmentNumber');
+      .populate('winners.student', 'name email enrollmentNumber phone collegeName')
+      .populate('registrations', '_id');
 
-    // Real-Time notification to admins
-    getIO().to('admin_room').emit('winners_added', {
-      eventId: event._id,
-      eventName: event.title,
-      winners: populated.winners
-    });
-    
+    const positionMap = { 1: '1st', 2: '2nd', 3: '3rd' };
+    const resultWinners = populated.winners.map(w => ({
+      position: positionMap[w.position] || `${w.position}th`,
+      studentId: w.student._id,
+      name: w.student.name || 'Unknown',
+      rollNumber: w.student.enrollmentNumber || 'N/A',
+      branch: w.student.collegeName || 'N/A',
+      year: 'N/A',
+      email: w.student.email || 'N/A',
+      phone: w.student.phone || 'N/A',
+      prize: (populated.rewardType === 'prize' && populated.prizeDetails?.length > 0)
+        ? `₹${populated.prizeDetails.find(p => p.position === w.position)?.amount || 0}`
+        : (populated.rewardType === 'certificate' ? 'Certificate' : 'None')
+    }));
+
+    await Result.findOneAndUpdate(
+      { eventId: event._id },
+      {
+        eventId: event._id,
+        eventName: populated.title,
+        winners: resultWinners,
+        createdBy: req.user._id,
+        createdByModel: req.user.role === 'faculty' ? 'Faculty' : 'User'
+      },
+      { upsert: true, new: true }
+    );
+
+    // Create notifications for all registered students
+    const notifications = populated.registrations.map((studentId) => ({
+      recipient: studentId._id || studentId,
+      type: 'result_published',
+      message: `Results for ${populated.title} have been published!`,
+      relatedEvent: populated._id,
+    }));
+
+    if (notifications.length > 0) {
+      await Notification.insertMany(notifications);
+      notifications.forEach((note) => {
+        getIO().to(`user_${note.recipient}`).emit('notification', note);
+      });
+    }
+
     // Also broadcast update globally so ui refreshes
     getIO().emit('event_updated', populated);
+
+    // Also notify admins just for info
+    getIO().to('admin_room').emit('winners_added', {
+      eventId: populated._id,
+      eventName: populated.title,
+      winners: populated.winners
+    });
 
     await EventLog.create({
       event: event._id,
       action: 'winners_added',
       performedBy: req.user._id,
-      details: 'Winners added and submitted for approval',
+      details: 'Winners added and published directly',
     });
 
     res.status(200).json({ success: true, data: populated });
@@ -886,7 +956,9 @@ export const approveResults = async (req, res, next) => {
       year: 'N/A',
       email: w.student.email || 'N/A',
       phone: w.student.phone || 'N/A',
-      prize: event.prize || 'Certificate'
+      prize: (event.rewardType === 'prize' && event.prizeDetails?.length > 0)
+        ? `₹${event.prizeDetails.find(p => p.position === w.position)?.amount || 0}`
+        : (event.rewardType === 'certificate' ? 'Certificate' : 'None')
     }));
 
     await Result.findOneAndUpdate(
@@ -896,7 +968,7 @@ export const approveResults = async (req, res, next) => {
         eventName: event.title,
         winners: resultWinners,
         createdBy: req.user._id,
-        createdByModel: req.user.role === 'admin' ? 'User' : 'Faculty' // 'admin' comes as User in DB
+        createdByModel: req.user.role === 'faculty' ? 'Faculty' : 'User'
       },
       { upsert: true, new: true }
     );

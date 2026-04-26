@@ -61,7 +61,7 @@ const sidebarConfig = {
  { label: 'Assigned Events', path: 'my-events', icon: icons.calendar },
  { label: 'Participants', path: 'participants', icon: icons.participants },
  { label: 'Results', path: 'results', icon: icons.results },
- { label: 'Reports', path: 'reports', icon: icons.reports },
+
  { label: 'Communication', path: 'communication', icon: icons.communication },
  { label: 'Profile', path: 'profile', icon: icons.profile },
  ],

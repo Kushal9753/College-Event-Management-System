@@ -124,7 +124,7 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  }
  await EventService.addWinners(event._id, validWinners);
  if (onUpdate) onUpdate();
- alert('Winners submitted for admin approval!');
+ alert('Results published successfully!');
  } catch (err) {
  alert('Failed to save winners: ' + err.message);
  } finally {
@@ -147,7 +147,7 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  }
  }
  };
- const organizerName = event.createdBy?.name || 'Unknown';
+  const organizerName = event.organizer || event.createdBy?.name || (event.role === 'faculty' ? 'Faculty Member' : 'Admin');
 
  /* ─── Student Registration Flow ─── */
  const handleRegister = async () => {

@@ -12,7 +12,10 @@ const EventForm = () => {
  description: '',
  assignedFaculty: [],
  registrationFees: 0,
- prize: '',
+ organizer: '',
+ rewardType: 'none',
+ winnerCount: 0,
+ prizes: [],
  });
 
  const [errors, setErrors] = useState({});
@@ -55,7 +58,6 @@ const EventForm = () => {
  if (!formData.duration.trim()) newErrors.duration = 'Duration is required';
  if (!formData.category) newErrors.category = 'Category is required';
  if (!formData.description.trim()) newErrors.description = 'Description is required';
- if (!formData.prize.trim()) newErrors.prize = 'Prize information is required';
  if (formData.registrationFees < 0) newErrors.registrationFees = 'Fees cannot be negative';
 
  if (formData.date) {
@@ -70,7 +72,11 @@ const EventForm = () => {
  };
 
  const resetForm = () => {
- setFormData({ name: '', venue: '', date: '', time: '', duration: '', category: '', description: '', assignedFaculty: [], registrationFees: 0, prize: '' });
+ setFormData({ 
+   name: '', venue: '', organizer: '', date: '', time: '', 
+   duration: '', category: '', description: '', assignedFaculty: [], 
+   registrationFees: 0, rewardType: 'none', winnerCount: 0, prizes: [] 
+ });
  setErrors({});
  };
 
@@ -153,6 +159,12 @@ const EventForm = () => {
  {errors.venue && <p className="mt-1 text-xs text-red-500">{errors.venue}</p>}
  </div>
 
+ {/* Organizer */}
+ <div>
+ <label htmlFor="ef-organizer" className={labelClasses}>Organizer <span className="text-gray-400 font-normal">(Faculty Name/Dept)</span></label>
+ <input type="text" id="ef-organizer" name="organizer" value={formData.organizer} onChange={handleChange} placeholder="e.g. Prof. Jain or CS Dept" className={inputClasses('organizer')} />
+ </div>
+
  {/* Date */}
  <div>
  <label htmlFor="ef-date" className={labelClasses}>Date <span className="text-red-500">*</span></label>
@@ -196,12 +208,82 @@ const EventForm = () => {
  {errors.registrationFees && <p className="mt-1 text-xs text-red-500">{errors.registrationFees}</p>}
  </div>
 
- {/* Prize */}
- <div>
- <label htmlFor="ef-prize" className={labelClasses}>Prize/Reward <span className="text-red-500">*</span></label>
- <input type="text" id="ef-prize" name="prize" value={formData.prize} onChange={handleChange} placeholder="e.g. ₹5000 + Certificate" className={inputClasses('prize')} />
- {errors.prize && <p className="mt-1 text-xs text-red-500">{errors.prize}</p>}
- </div>
+  {/* Reward Type */}
+  <div>
+  <label htmlFor="ef-rewardType" className={labelClasses}>Reward Type <span className="text-red-500">*</span></label>
+  <select id="ef-rewardType" name="rewardType" value={formData.rewardType} 
+    onChange={(e) => {
+      const val = e.target.value;
+      setFormData(prev => ({ 
+        ...prev, 
+        rewardType: val,
+        winnerCount: val === 'prize' ? 3 : 0,
+        prizes: val === 'prize' ? [
+          { position: 1, amount: 0 },
+          { position: 2, amount: 0 },
+          { position: 3, amount: 0 }
+        ] : []
+      }));
+    }} 
+    className={inputClasses('rewardType')}
+  >
+  <option value="none">None</option>
+  <option value="certificate">Certificate Only</option>
+  <option value="prize">Prize Money</option>
+  </select>
+  </div>
+
+  {/* Winner Count (if Prize Money) */}
+  {formData.rewardType === 'prize' && (
+  <div>
+  <label htmlFor="ef-winnerCount" className={labelClasses}>No. of Winners <span className="text-red-500">*</span></label>
+  <select id="ef-winnerCount" name="winnerCount" value={formData.winnerCount} 
+    onChange={(e) => {
+      const count = parseInt(e.target.value);
+      const newPrizes = Array.from({ length: count }, (_, i) => ({
+        position: i + 1,
+        amount: formData.prizes[i]?.amount || 0
+      }));
+      setFormData(prev => ({ ...prev, winnerCount: count, prizes: newPrizes }));
+    }} 
+    className={inputClasses('winnerCount')}
+  >
+  <option value={1}>1 Winner (Winner Takes All)</option>
+  <option value={3}>3 Winners (1st, 2nd, 3rd)</option>
+  <option value={5}>5 Winners</option>
+  </select>
+  </div>
+  )}
+
+  {/* Prize Money Inputs */}
+  {formData.rewardType === 'prize' && (
+  <div className="md:col-span-2 bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-4">
+    <h4 className="text-sm font-bold text-blue-800">Set Prize Money for Each Position</h4>
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {formData.prizes.map((p, idx) => (
+        <div key={p.position}>
+          <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
+            {p.position === 1 ? '🥇 1st Prize' : p.position === 2 ? '🥈 2nd Prize' : p.position === 3 ? '🥉 3rd Prize' : `🏅 ${p.position}th Prize`}
+          </label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs text-xs">₹</span>
+            <input 
+              type="number" 
+              min="0"
+              value={p.amount} 
+              onChange={(e) => {
+                const newPrizes = [...formData.prizes];
+                newPrizes[idx].amount = parseInt(e.target.value) || 0;
+                setFormData(prev => ({ ...prev, prizes: newPrizes }));
+              }}
+              className="w-full pl-7 pr-3 py-2 rounded-lg border border-gray-200 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+  )}
 
  {/* Assigned Faculty */}
  <div className="md:col-span-2">

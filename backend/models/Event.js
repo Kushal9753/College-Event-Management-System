@@ -12,6 +12,10 @@ const eventSchema = new mongoose.Schema(
       required: [true, 'Event venue is required'],
       trim: true,
     },
+    organizer: {
+      type: String,
+      trim: true,
+    },
     date: {
       type: Date,
       required: [true, 'Event date is required'],
@@ -37,12 +41,29 @@ const eventSchema = new mongoose.Schema(
     },
     prize: {
       type: String,
-      required: [true, 'Prize is required'],
+      required: false,
     },
+    rewardType: {
+      type: String,
+      enum: ['prize', 'certificate', 'none'],
+      default: 'none',
+    },
+    prizeDetails: [
+      {
+        position: Number,
+        amount: Number,
+      },
+    ],
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      refPath: 'createdByModel',
       required: [true, 'Event creator is required'],
+    },
+    createdByModel: {
+      type: String,
+      required: true,
+      enum: ['User', 'Faculty'],
+      default: 'User'
     },
     role: {
       type: String,

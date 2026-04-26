@@ -44,7 +44,7 @@ export const addResult = async (req, res, next) => {
       eventName,
       winners,
       createdBy: req.user._id,
-      createdByModel: 'User',
+      createdByModel: req.user.role === 'faculty' ? 'Faculty' : 'User',
     });
 
     res.status(201).json({ success: true, data: result });

@@ -32,7 +32,7 @@ const EventDetails = ({ event, onClose, onRegister, onCancel }) => {
  const registrationOpen = eventDate > now ? 'Open' : 'Closed';
 
  // Get organizer name from populated createdBy or fallback
- const organizerName = event.createdBy?.name || 'Admin';
+ const organizerName = event.organizer || event.createdBy?.name || (event.role === 'faculty' ? 'Faculty Member' : 'Admin');
 
  const formatAssignedFaculty = (facultyArray) => {
  if (!facultyArray || facultyArray.length === 0) return 'No faculty assigned yet';

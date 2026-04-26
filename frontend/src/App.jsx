@@ -38,7 +38,7 @@ const FacultyMyEvents = lazy(() => import('./pages/faculty/MyEvents'));
 const CreateEvent = lazy(() => import('./pages/faculty/CreateEvent'));
 const Participants = lazy(() => import('./pages/faculty/Participants'));
 const FacultyResults = lazy(() => import('./pages/faculty/Results'));
-const FacultyReports = lazy(() => import('./pages/faculty/Reports'));
+
 const FacultySettings = lazy(() => import('./pages/faculty/Settings'));
 const FacultyProfile = lazy(() => import('./pages/faculty/Profile'));
 const FacultyCommunication = lazy(() => import('./pages/faculty/Communication'));
@@ -106,7 +106,7 @@ function App() {
  <Route path="create-event" element={<CreateEvent />} />
  <Route path="participants" element={<Participants />} />
  <Route path="results" element={<FacultyResults />} />
- <Route path="reports" element={<FacultyReports />} />
+
  <Route path="communication" element={<FacultyCommunication />} />
  <Route path="settings" element={<FacultySettings />} />
  <Route path="profile" element={<FacultyProfile />} />
