@@ -94,10 +94,13 @@ const Dashboard = () => {
       pending: 'bg-amber-50 text-amber-700 border-amber-200',
       completed: 'bg-blue-50 text-blue-700 border-blue-200',
       archived: 'bg-gray-50 text-gray-700 border-gray-200',
+      ongoing: 'bg-blue-50 text-blue-700 border-blue-200',
+      pending_approval: 'bg-orange-50 text-orange-700 border-orange-200',
+      published: 'bg-teal-50 text-teal-700 border-teal-200',
     };
     return (
-      <span className={`px-2.5 py-1 inline-flex text-xs font-semibold rounded-full border ${styles[status] || styles.pending}`}>
-        {status?.charAt(0).toUpperCase() + status?.slice(1)}
+      <span className={`px-2.5 py-1 inline-flex text-xs font-semibold rounded-full border ${styles[status?.toLowerCase()] || styles.pending}`}>
+        {status?.replace('_', ' ').charAt(0).toUpperCase() + status?.replace('_', ' ').slice(1)}
       </span>
     );
   };
@@ -112,7 +115,9 @@ const Dashboard = () => {
   };
 
   const totalCreated = createdEvents.length;
-  const approvedCount = createdEvents.filter(e => e.status === 'approved').length;
+  const uniqueEvents = Array.from(new Map([...createdEvents, ...assignedEvents].map(e => [e._id, e])).values());
+  const approvedStatuses = ['approved', 'ongoing', 'completed', 'pending_approval', 'published'];
+  const approvedCount = uniqueEvents.filter(e => approvedStatuses.includes(e?.status?.toLowerCase())).length;
   const totalRegistrations = Object.values(registrationCounts).reduce((sum, c) => sum + c, 0);
 
   const stats = [

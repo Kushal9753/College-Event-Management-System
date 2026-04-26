@@ -18,21 +18,59 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
 
-  // Optional: Placeholders for Faculty stats
-  const activeEventsCount = 0;
-  const totalParticipants = 0;
+  const [stats, setStats] = useState({ activeEventsCount: 0, totalParticipants: 0 });
 
   useEffect(() => {
+    // Initial load from local storage
     const data = getUserData();
     if (data) {
       setUser(data);
       setFormData({
         name: data.name || '',
         phone: data.phone || '',
-        collegeName: data.collegeName || '',
+        collegeName: data.collegeName || data.department || '',
         password: ''
       });
     }
+
+    const fetchProfileData = async () => {
+      try {
+        // Fetch fresh profile
+        const profileRes = await api.get('/auth/profile');
+        const freshUser = profileRes.data;
+        setUser(freshUser);
+        setUserData(freshUser); // update local storage
+        setFormData({
+          name: freshUser.name || '',
+          phone: freshUser.phone || '',
+          collegeName: freshUser.collegeName || freshUser.department || '',
+          password: ''
+        });
+
+        if (freshUser.role === 'faculty') {
+          // Fetch events to calculate stats
+          const { default: EventService } = await import('../../services/eventService');
+          const [createdRes, assignedRes] = await Promise.all([
+            EventService.getMyEvents(),
+            api.get('/events/assigned'),
+          ]);
+          
+          const created = createdRes?.data || [];
+          const assigned = assignedRes?.data?.data || [];
+          
+          const uniqueEvents = Array.from(new Map([...created, ...assigned].map(e => [e._id, e])).values());
+          
+          const activeEvents = uniqueEvents.length;
+          const participants = uniqueEvents.reduce((sum, ev) => sum + (ev.registrations?.length || 0), 0);
+          
+          setStats({ activeEventsCount: activeEvents, totalParticipants: participants });
+        }
+      } catch (err) {
+        console.error('Failed to fetch profile data', err);
+      }
+    };
+
+    fetchProfileData();
   }, []);
 
   const handleChange = (e) => {
@@ -114,10 +152,10 @@ const Profile = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50/50">
-                <Award className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                <Building className="w-5 h-5 text-gray-400 flex-shrink-0" />
                 <div className="overflow-hidden">
-                  <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-0.5">Employee ID</p>
-                  <p className="text-sm font-medium text-gray-900">{user.enrollmentNumber || 'N/A'}</p>
+                  <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-0.5">Department</p>
+                  <p className="text-sm font-medium text-gray-900">{user.department || user.collegeName || 'N/A'}</p>
                 </div>
               </div>
             </div>
@@ -127,12 +165,12 @@ const Profile = () => {
             <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-3xl p-6 shadow-lg shadow-indigo-600/20 text-white relative overflow-hidden text-center">
               <Award className="absolute right-[-10px] bottom-[-10px] w-24 h-24 text-white opacity-10" />
               <p className="text-indigo-100 text-sm font-medium mb-1">Organized<br/>Events</p>
-              <p className="text-4xl font-extrabold">{activeEventsCount}</p>
+              <p className="text-4xl font-extrabold">{stats.activeEventsCount}</p>
             </div>
             <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl p-6 shadow-lg shadow-blue-600/20 text-white relative overflow-hidden text-center">
               <Users className="absolute right-[-10px] bottom-[-10px] w-24 h-24 text-white opacity-10" />
               <p className="text-blue-100 text-sm font-medium mb-1">Total<br/>Participants</p>
-              <p className="text-4xl font-extrabold">{totalParticipants}</p>
+              <p className="text-4xl font-extrabold">{stats.totalParticipants}</p>
             </div>
           </div>
         </div>
