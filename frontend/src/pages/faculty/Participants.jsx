@@ -108,7 +108,9 @@ const Participants = () => {
         }
       });
       setParticipantsMap(newMap);
-    } catch {} finally {
+    } catch (err) {
+      console.error('Failed to refetch participants data:', err);
+    } finally {
       setLoadingParts(false);
     }
   }, [events, selectedEventId, participantsMap]);

@@ -9,21 +9,23 @@ const FacultyForm = ({ isOpen, onClose, onSubmit, initialData, isSubmitting }) =
  const [errors, setErrors] = useState({});
  const isEditing = !!initialData;
 
- useEffect(() => {
- if (initialData) {
- setFormData({
- name: initialData.name || '',
- email: initialData.email || '',
- phone: initialData.phone || '',
- department: initialData.department || '',
- expertise: initialData.expertise || '',
- collegeName: initialData.collegeName || '',
- });
- } else {
- setFormData(emptyForm);
- }
- setErrors({});
- }, [initialData, isOpen]);
+  useEffect(() => {
+    if (isOpen) {
+      if (initialData) {
+        setFormData({
+          name: initialData.name || '',
+          email: initialData.email || '',
+          phone: initialData.phone || '',
+          department: initialData.department || '',
+          expertise: initialData.expertise || '',
+          collegeName: initialData.collegeName || '',
+        });
+      } else {
+        setFormData(emptyForm);
+      }
+      setErrors({});
+    }
+  }, [initialData, isOpen]);
 
  const validate = () => {
  const newErrors = {};

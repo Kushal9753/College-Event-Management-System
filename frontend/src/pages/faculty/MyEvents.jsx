@@ -211,7 +211,9 @@ const MyEvents = () => {
               try { 
                 const res = await api.get('/events/assigned'); 
                 setEvents(res.data.data || []); 
-              } catch(e){} 
+              } catch(e){
+                console.error("Failed to refetch assigned events:", e);
+              } 
             }; 
             fn(); 
           }}
