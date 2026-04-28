@@ -71,7 +71,7 @@ const EventCard = ({ event, onRegister, onCancel, onViewDetails, layout = 'full'
           </div>
         </div>
         
-        <div className="flex flex-wrap gap-3 pt-2">
+        <div className="flex flex-wrap gap-2 sm:gap-3 pt-2">
           {layout !== 'compact' && (
             <button 
               onClick={() => onViewDetails(event)}

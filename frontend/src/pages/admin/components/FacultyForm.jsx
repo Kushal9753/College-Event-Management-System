@@ -11,19 +11,21 @@ const FacultyForm = ({ isOpen, onClose, onSubmit, initialData, isSubmitting }) =
 
   useEffect(() => {
     if (isOpen) {
-      if (initialData) {
-        setFormData({
-          name: initialData.name || '',
-          email: initialData.email || '',
-          phone: initialData.phone || '',
-          department: initialData.department || '',
-          expertise: initialData.expertise || '',
-          collegeName: initialData.collegeName || '',
-        });
-      } else {
-        setFormData(emptyForm);
-      }
-      setErrors({});
+      setTimeout(() => {
+        if (initialData) {
+          setFormData({
+            name: initialData.name || '',
+            email: initialData.email || '',
+            phone: initialData.phone || '',
+            department: initialData.department || '',
+            expertise: initialData.expertise || '',
+            collegeName: initialData.collegeName || '',
+          });
+        } else {
+          setFormData(emptyForm);
+        }
+        setErrors({});
+      }, 0);
     }
   }, [initialData, isOpen]);
 

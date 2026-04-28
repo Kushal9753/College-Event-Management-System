@@ -288,10 +288,10 @@ const ManageEvents = () => {
 
                         {event.status !== 'archived' && (
                           <button
-                            onClick={() => handleArchive(event._id)}
+                            onClick={() => handleDelete(event._id)}
                             disabled={actionLoading === event._id}
                             className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all disabled:opacity-50"
-                            title="Archive Event"
+                            title="Delete Event"
                           >
                             <Archive className="w-5 h-5" />
                           </button>

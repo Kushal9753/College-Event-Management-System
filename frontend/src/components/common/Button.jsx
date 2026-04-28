@@ -8,7 +8,7 @@ const Button = ({
  disabled,
  ...props
 }) => {
- const baseStyles = 'w-full py-2 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2';
+ const baseStyles = 'w-full py-3 px-4 min-h-[44px] rounded-lg font-medium transition-all duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2 text-sm sm:text-base active:scale-[0.98]';
  
  const variants = {
  primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 disabled:bg-blue-300 disabled:cursor-not-allowed',

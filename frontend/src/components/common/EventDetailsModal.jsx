@@ -316,11 +316,11 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  if (!event) return null;
 
  return (
- <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
- <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden border border-gray-200 animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+ <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+ <div className="bg-white w-full sm:max-w-3xl rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden border border-gray-200 animate-in zoom-in-95 duration-200 flex flex-col max-h-[95vh] sm:max-h-[90vh]">
 
  {/* Header */}
- <div className="relative shrink-0 bg-gradient-to-r from-indigo-500 to-blue-600 p-6">
+ <div className="relative shrink-0 bg-gradient-to-r from-indigo-500 to-blue-600 p-4 sm:p-6">
  <button onClick={onClose} className="absolute top-4 right-4 p-2 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors">
  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
  </button>
@@ -331,17 +331,17 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  </span>
  {statusBadge(event.status)}
  </div>
- <h2 className="text-2xl font-bold text-white">{event.title || event.name}</h2>
+ <h2 className="text-lg sm:text-2xl font-bold text-white line-clamp-2">{event.title || event.name}</h2>
  </div>
  </div>
 
  {/* Tabs Navigation */}
- <div className="flex border-b border-gray-200 bg-gray-50 px-6">
+ <div className="flex border-b border-gray-200 bg-gray-50 px-3 sm:px-6 overflow-x-auto scrollbar-hide">
  {getTabs().map(tab => (
  <button
  key={tab.id}
  onClick={() => setActiveTab(tab.id)}
- className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+ className={`px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${
  activeTab === tab.id
  ? 'border-indigo-500 text-indigo-600'
  : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -353,10 +353,10 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  </div>
 
  {/* Content Area */}
- <div className="p-6 md:p-8 overflow-y-auto flex-grow">
+ <div className="p-4 sm:p-6 md:p-8 overflow-y-auto flex-grow">
  {activeTab === 'details' && (
  <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-300">
- <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
  <div className="space-y-4">
  <DetailItem icon="calendar" label="Date & Time" value={new Date(event.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} subValue={`${event.time} (${event.duration || 'N/A'})`} />
  <DetailItem icon="location" label="Venue" value={event.venue} />
@@ -369,11 +369,10 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  </div>
 
   {/* Assigned Faculty Section */}
-  {true && (
  <div>
  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 border-b pb-2">Assigned Faculty</h4>
  {event.assignedFaculty?.length > 0 ? (
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
  {event.assignedFaculty.map(f => (
  <div 
   key={f._id || f.email} 
@@ -395,7 +394,6 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  </div>
  ) : (<p className="text-sm bg-gray-50 p-3 rounded-lg border italic text-gray-500">No faculty currently assigned.</p>)}
  </div>
- )}
 
  {/* Description */}
  <div>
@@ -495,7 +493,7 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  <div className="pt-6 border-t">
  {!registrationSuccess ? (
  /* Not registered yet → Show register button */
- <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+ <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
  <div>
  <h4 className="text-base font-bold text-gray-900 flex items-center">
  Registration is Open
@@ -506,7 +504,7 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  </p>
  </div>
  <button onClick={handleRegister} disabled={isRegistering}
- className="px-6 py-3 w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 transform active:scale-95 whitespace-nowrap">
+ className="px-6 py-3 w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 transform active:scale-95 whitespace-nowrap min-h-[44px]">
  {isRegistering ? 'Registering...' : 'Register Now'}
  </button>
  </div>
@@ -643,7 +641,7 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
 
  {/* Actions for Faculty/Admin */}
  {userRole !== 'student' && (
- <div className="flex flex-wrap gap-3 pt-6 border-t">
+ <div className="flex flex-wrap gap-2 sm:gap-3 pt-6 border-t">
  <button onClick={handleExport} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200 shadow-sm">
  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M7 10l5 5m0 0l5-5m-5 5V3"/></svg>
  Export CSV
@@ -811,7 +809,7 @@ const EventDetailsModal = ({ event, onClose, onUpdate }) => {
  </div>
 
  {paymentStep !== 'gateway' && (
- <div className="p-6 border-t border-gray-100 bg-gray-50 shrink-0">
+ <div className="p-4 sm:p-6 border-t border-gray-100 bg-gray-50 shrink-0">
   <button onClick={onClose} className="w-full py-3 text-xs font-bold uppercase tracking-widest text-gray-600 bg-white border border-gray-200 rounded-2xl hover:shadow-lg transition-all active:scale-[0.99]">{paymentStep === 'done' ? 'Close' : 'Dismiss Modal'}</button>
  </div>
  )}

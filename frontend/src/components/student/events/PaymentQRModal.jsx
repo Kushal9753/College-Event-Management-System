@@ -49,8 +49,8 @@ const PaymentQRModal = ({ isOpen, onClose, registration, eventName }) => {
   const handleInputChange = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-gray-100 flex flex-col items-center">
+    <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-white w-full sm:max-w-lg rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-gray-100 flex flex-col items-center max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
         
         {success ? (
           <div className="p-12 text-center w-full flex flex-col items-center">
@@ -62,7 +62,7 @@ const PaymentQRModal = ({ isOpen, onClose, registration, eventName }) => {
           </div>
         ) : (
           <>
-            <div className="w-full bg-slate-900 text-white p-8 relative overflow-hidden">
+            <div className="w-full bg-slate-900 text-white p-5 sm:p-8 relative overflow-hidden">
                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
                <div className="relative z-10">
                  <div className="flex items-center gap-2 text-indigo-300 font-bold text-xs uppercase tracking-widest mb-4">
@@ -71,7 +71,7 @@ const PaymentQRModal = ({ isOpen, onClose, registration, eventName }) => {
                  <div className="flex items-end justify-between">
                     <div>
                       <p className="text-slate-400 font-medium mb-1">Payable Amount</p>
-                      <p className="text-5xl font-black tracking-tighter">₹{amount}</p>
+                      <p className="text-3xl sm:text-5xl font-black tracking-tighter">₹{amount}</p>
                     </div>
                     <div className="text-right">
                        <p className="text-slate-400 font-medium mb-1 truncate max-w-[150px]">{eventName}</p>
@@ -81,7 +81,7 @@ const PaymentQRModal = ({ isOpen, onClose, registration, eventName }) => {
                </div>
             </div>
 
-            <div className="w-full p-8 bg-slate-50 border-b border-gray-100">
+            <div className="w-full p-5 sm:p-8 bg-slate-50 border-b border-gray-100">
               <div className="flex bg-gray-200/50 p-1.5 rounded-2xl">
                 {methodOptions.map(m => {
                    const Icon = m.icon;
@@ -99,7 +99,7 @@ const PaymentQRModal = ({ isOpen, onClose, registration, eventName }) => {
               </div>
             </div>
 
-            <div className="w-full p-8">
+            <div className="w-full p-5 sm:p-8">
                {paymentMethod === 'card' ? (
                  <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
                     <div>
@@ -132,7 +132,7 @@ const PaymentQRModal = ({ isOpen, onClose, registration, eventName }) => {
                )}
             </div>
 
-            <div className="w-full p-8 pt-0 flex gap-4">
+            <div className="w-full p-5 sm:p-8 pt-0 flex flex-col sm:flex-row gap-3 sm:gap-4">
                <button onClick={onClose} disabled={processing} className="flex-1 py-4 text-sm font-bold text-gray-500 hover:text-gray-800 bg-gray-100/50 hover:bg-gray-100 rounded-2xl transition-all">Cancel</button>
                <button 
                  onClick={handleProcessPayment} 

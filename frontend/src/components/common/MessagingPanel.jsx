@@ -139,7 +139,7 @@ const MessagingPanel = () => {
  };
 
  /* ── type button helper ────────────────────────────────────── */
- const TypeBtn = ({ type, icon, label }) => (
+ const renderTypeBtn = (type, icon, label) => (
  <button
  type="button"
  onClick={() => {
@@ -187,9 +187,9 @@ const MessagingPanel = () => {
  <div>
  <label className="block text-sm font-medium text-gray-700 mb-2">Message Type</label>
  <div className="flex flex-wrap gap-2">
- <TypeBtn type="individual" icon={ICONS.user} label="Individual" />
- <TypeBtn type="broadcast" icon={ICONS.broadcast} label="Broadcast" />
- <TypeBtn type="group" icon={ICONS.group} label="Group" />
+ {renderTypeBtn('individual', ICONS.user, 'Individual')}
+ {renderTypeBtn('broadcast', ICONS.broadcast, 'Broadcast')}
+ {renderTypeBtn('group', ICONS.group, 'Group')}
  </div>
  </div>
 

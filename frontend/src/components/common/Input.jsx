@@ -14,7 +14,7 @@ const Input = ({
  return (
  <div className="w-full mb-4">
  {label && (
- <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
+ <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1.5">
  {label}
  </label>
  )}
@@ -22,7 +22,7 @@ const Input = ({
  <input
  id={id}
  type={inputType}
- className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors 
+ className={`w-full px-4 py-3 min-h-[44px] text-sm sm:text-base border rounded-lg focus:outline-none focus:ring-2 transition-colors 
  ${
  error
  ? 'border-red-500 focus:ring-red-500 bg-red-50 '

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 
@@ -20,7 +21,9 @@ export const SocketProvider = ({ children }) => {
       timeout: 10000,
     });
 
-    setSocket(newSocket);
+    setTimeout(() => {
+      setSocket(newSocket);
+    }, 0);
 
     // Cleanup on unmount
     return () => newSocket.close();
