@@ -3,13 +3,20 @@ import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import EventService from '../../services/eventService';
 import { useSocket } from '../../context/SocketContext';
+import { useQuery } from '../../hooks/useQuery';
 import EventDetailsModal from '../../components/common/EventDetailsModal';
 import { Plus, Search, AlertCircle, CalendarX, Eye, Archive } from 'lucide-react';
 
 const ManageEvents = () => {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data: events = [], loading, error, refetch } = useQuery(
+    'admin-events-list',
+    async () => {
+      const response = await api.get('/events');
+      return response.data.data || [];
+    },
+    { staleTime: 30000 }
+  );
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
@@ -21,41 +28,23 @@ const ManageEvents = () => {
   const categories = ['All', 'hackathon', 'seminar', 'workshop', 'cultural', 'sports', 'technical', 'other'];
   const statuses = ['All', 'pending', 'approved', 'ongoing', 'completed', 'pending_approval', 'published', 'rejected'];
 
-  const fetchEvents = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/events');
-      setEvents(response.data.data || []);
-      setError(null);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch events');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchEvents();
-  }, []);
-
   useEffect(() => {
     if (!socket) return;
-    socket.on('event_created', fetchEvents);
-    socket.on('event_updated', fetchEvents);
+    const handleUpdate = () => refetch();
+    socket.on('event_created', handleUpdate);
+    socket.on('event_updated', handleUpdate);
 
-    
     return () => {
-      socket.off('event_created', fetchEvents);
-      socket.off('event_updated', fetchEvents);
-
+      socket.off('event_created', handleUpdate);
+      socket.off('event_updated', handleUpdate);
     };
-  }, [socket]);
+  }, [socket, refetch]);
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) return;
     try {
       setActionLoading(id);
       await EventService.deleteEvent(id);
-      fetchEvents();
+      refetch();
     } catch (err) {
       alert(err.message || 'Failed to delete event');
     } finally {
@@ -66,7 +55,7 @@ const ManageEvents = () => {
     try {
       setActionLoading(id);
       await EventService.approveEvent(id);
-      fetchEvents();
+      refetch();
     } catch (err) {
       alert(err.message || 'Failed to approve event');
     } finally {
@@ -80,7 +69,7 @@ const ManageEvents = () => {
     try {
       setActionLoading(id);
       await EventService.rejectEvent(id, reason);
-      fetchEvents();
+      refetch();
     } catch (err) {
       alert(err.message || 'Failed to reject event');
     } finally {
@@ -92,7 +81,7 @@ const ManageEvents = () => {
     try {
       setActionLoading(id);
       await EventService.approveResults(id);
-      fetchEvents();
+      refetch();
     } catch (err) {
       alert(err.message || 'Failed to publish results');
     } finally {
@@ -310,7 +299,7 @@ const ManageEvents = () => {
         <EventDetailsModal
           event={selectedEvent}
           onClose={() => setSelectedEvent(null)}
-          onUpdate={() => { fetchEvents(); setSelectedEvent(null); }}
+          onUpdate={() => { refetch(); setSelectedEvent(null); }}
         />
       )}
     </div>

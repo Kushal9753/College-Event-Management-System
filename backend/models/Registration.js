@@ -50,4 +50,9 @@ const registrationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Performance indexes
+registrationSchema.index({ studentId: 1, eventId: 1 }, { unique: true });
+registrationSchema.index({ eventId: 1 });
+registrationSchema.index({ paymentStatus: 1 });
+
 export default mongoose.model('Registration', registrationSchema);

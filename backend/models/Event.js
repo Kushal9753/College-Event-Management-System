@@ -118,4 +118,9 @@ const eventSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Performance indexes
+eventSchema.index({ status: 1, date: 1 });
+eventSchema.index({ createdBy: 1, createdAt: -1 });
+eventSchema.index({ assignedFaculty: 1 });
+
 export default mongoose.model('Event', eventSchema);

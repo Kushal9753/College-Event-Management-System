@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import api from '../../services/api';
+import { useQuery } from '../../hooks/useQuery';
 import {
   Users2, Search, Filter, Download, ChevronDown, ChevronUp,
   Calendar, CreditCard, CheckCircle2, XCircle, Clock, AlertCircle,
@@ -26,12 +27,7 @@ const paymentBadge = (status) => {
 /* ──────────────── COMPONENT ──────────────── */
 const Participants = () => {
   /* ── state ── */
-  const [events, setEvents]           = useState([]);
   const [selectedEventId, setSelectedEventId] = useState('all');
-  const [participantsMap, setParticipantsMap] = useState({});   // eventId → { eventName, participants[] }
-  const [loading, setLoading]         = useState(true);
-  const [loadingParts, setLoadingParts] = useState(false);
-  const [error, setError]             = useState(null);
 
   // filters
   const [searchQuery, setSearchQuery]       = useState('');
@@ -41,79 +37,41 @@ const Participants = () => {
   const [showFilters, setShowFilters]       = useState(false);
   const [detailRow, setDetailRow]           = useState(null);
 
-  /* ── fetch events ── */
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        const res = await api.get('/events/assigned');
-        const evts = res.data.data || [];
-        setEvents(evts);
-
-        // Fetch participants for all events in parallel
-        if (evts.length > 0) {
-          setLoadingParts(true);
-          const results = await Promise.allSettled(
-            evts.map(e => api.get(`/events/${e._id}/participants`))
-          );
-          const map = {};
-          results.forEach((r, i) => {
-            if (r.status === 'fulfilled') {
-              const d = r.value.data.data;
-              map[evts[i]._id] = {
-                eventName: d.eventName || evts[i].title,
-                eventDate: evts[i].date,
-                eventCategory: evts[i].category,
-                eventStatus: evts[i].status,
-                totalRegistered: d.totalRegistered,
-                maxParticipants: d.maxParticipants,
-                participants: d.participants || [],
-              };
-            }
-          });
-          setParticipantsMap(map);
-          setLoadingParts(false);
-        }
-        setError(null);
-      } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load data');
-      } finally {
-        setLoading(false);
+  const { data: fetchResult, loading, error, refetch: refresh } = useQuery(
+    'faculty-participants',
+    async () => {
+      const res = await api.get('/events/assigned');
+      const evts = res.data.data || [];
+      
+      let map = {};
+      if (evts.length > 0) {
+        const results = await Promise.allSettled(
+          evts.map(e => api.get(`/events/${e._id}/participants`))
+        );
+        results.forEach((r, i) => {
+          if (r.status === 'fulfilled') {
+            const d = r.value.data.data;
+            map[evts[i]._id] = {
+              eventName: d.eventName || evts[i].title,
+              eventDate: evts[i].date,
+              eventCategory: evts[i].category,
+              eventStatus: evts[i].status,
+              totalRegistered: d.totalRegistered,
+              maxParticipants: d.maxParticipants,
+              participants: d.participants || [],
+            };
+          }
+        });
       }
-    })();
-  }, []);
+      return { events: evts, map };
+    },
+    { staleTime: 30000 }
+  );
 
-  /* ── refresh ── */
-  const refresh = useCallback(async () => {
-    try {
-      setLoadingParts(true);
-      const eventIds = selectedEventId === 'all' ? events.map(e => e._id) : [selectedEventId];
-      const results = await Promise.allSettled(
-        eventIds.map(id => api.get(`/events/${id}/participants`))
-      );
-      const newMap = { ...participantsMap };
-      results.forEach((r, i) => {
-        if (r.status === 'fulfilled') {
-          const d = r.value.data.data;
-          const evt = events.find(e => e._id === eventIds[i]);
-          newMap[eventIds[i]] = {
-            eventName: d.eventName || evt?.title,
-            eventDate: evt?.date,
-            eventCategory: evt?.category,
-            eventStatus: evt?.status,
-            totalRegistered: d.totalRegistered,
-            maxParticipants: d.maxParticipants,
-            participants: d.participants || [],
-          };
-        }
-      });
-      setParticipantsMap(newMap);
-    } catch (err) {
-      console.error('Failed to refetch participants data:', err);
-    } finally {
-      setLoadingParts(false);
-    }
-  }, [events, selectedEventId, participantsMap]);
+  const events = fetchResult?.events || [];
+  const participantsMap = fetchResult?.map || {};
+  const loadingParts = false;
+
 
   /* ── build flat list with event metadata ── */
   const allParticipants = useMemo(() => {

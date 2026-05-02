@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EventService from '../../services/eventService';
 import api from '../../services/api';
 import { useSocket } from '../../context/SocketContext';
+import { useQuery } from '../../hooks/useQuery';
 import EventDetailsModal from '../../components/common/EventDetailsModal';
 import {
   Plus, Search, ArrowRight, Activity, CalendarDays,
@@ -12,12 +13,7 @@ import {
 const Dashboard = () => {
   const navigate = useNavigate();
   const socket = useSocket();
-  const [createdEvents, setCreatedEvents] = useState([]);
-  const [assignedEvents, setAssignedEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [registrationCounts, setRegistrationCounts] = useState({});
   
   // Filtering states
   const [filters, setFilters] = useState({
@@ -26,37 +22,38 @@ const Dashboard = () => {
     status: ''
   });
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
+  const [debouncedFilters, setDebouncedFilters] = useState(filters);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedFilters(filters);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [filters]);
+
+  const { data, loading, error, refetch } = useQuery(
+    `faculty-dashboard-${JSON.stringify(debouncedFilters)}`,
+    async () => {
       const [createdRes, assignedRes] = await Promise.all([
-        EventService.getMyEvents(filters),
+        EventService.getMyEvents(debouncedFilters),
         api.get('/events/assigned'),
       ]);
       const created = createdRes.data || [];
       const assigned = assignedRes.data.data || [];
-      setCreatedEvents(created);
-      setAssignedEvents(assigned);
-
+      
       const counts = {};
       [...created, ...assigned].forEach((ev) => {
         counts[ev._id] = ev.registrations?.length || 0;
       });
-      setRegistrationCounts(counts);
-      setError(null);
-    } catch (err) {
-      setError(err.message || 'Failed to load events');
-    } finally {
-      setLoading(false);
-    }
-  }, [filters]);
+      
+      return { created, assigned, counts };
+    },
+    { staleTime: 30000, deps: [debouncedFilters] }
+  );
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchData();
-    }, 300); // Debounce search
-    return () => clearTimeout(timer);
-  }, [fetchData]);
+  const createdEvents = data?.created || [];
+  const assignedEvents = data?.assigned || [];
+  const registrationCounts = data?.counts || {};
 
   useEffect(() => {
     if (!socket) return;
@@ -66,21 +63,25 @@ const Dashboard = () => {
 
     const handleRegistrationUpdate = (data) => {
       if (data?.eventId) {
-        setRegistrationCounts(prev => ({ ...prev, [data.eventId]: data.registrationCount }));
+        // We'd optimally use setOptimistic here, but to keep it simple we can just refetch
+        // or update via a separate state. For now we will rely on refetch for simplicity.
+        refetch();
       }
     };
+    
+    const handleEventUpdate = () => refetch();
 
     socket.on('registration_update', handleRegistrationUpdate);
-    socket.on('event_created', fetchData);
-    socket.on('event_updated', fetchData);
+    socket.on('event_created', handleEventUpdate);
+    socket.on('event_updated', handleEventUpdate);
 
     return () => {
       uniqueIds.forEach(id => socket.emit('unsubscribe_event', id));
       socket.off('registration_update', handleRegistrationUpdate);
-      socket.off('event_created', fetchData);
-      socket.off('event_updated', fetchData);
+      socket.off('event_created', handleEventUpdate);
+      socket.off('event_updated', handleEventUpdate);
     };
-  }, [socket, createdEvents.length, assignedEvents.length, fetchData]);
+  }, [socket, createdEvents.length, assignedEvents.length, refetch]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -346,7 +347,7 @@ const Dashboard = () => {
         <EventDetailsModal 
           event={selectedEvent} 
           onClose={() => setSelectedEvent(null)} 
-          onUpdate={() => { fetchData(); setSelectedEvent(null); }}
+          onUpdate={() => { refetch(); setSelectedEvent(null); }}
         />
       )}
     </div>

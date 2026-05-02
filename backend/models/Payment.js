@@ -48,4 +48,8 @@ const paymentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Performance indexes
+paymentSchema.index({ eventId: 1 });
+paymentSchema.index({ studentId: 1 });
+
 export default mongoose.model('Payment', paymentSchema);

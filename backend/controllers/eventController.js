@@ -114,15 +114,22 @@ export const getMyEvents = async (req, res, next) => {
 
     const events = await Event.find(query)
       .populate('assignedFaculty', 'name email phone designation department collegeName')
-      .populate('registrations', 'name email')
+      .lean()
       .sort({ createdAt: -1 });
 
+    // Batch-fetch registration counts
+    const eventIds = events.map(e => e._id);
+    const regCounts = await Registration.aggregate([
+      { $match: { eventId: { $in: eventIds } } },
+      { $group: { _id: '$eventId', count: { $sum: 1 } } }
+    ]);
+    const rcMap = new Map(regCounts.map(r => [r._id.toString(), r.count]));
+
     // Enrich with registrationCount
-    const data = events.map(event => {
-      const obj = event.toObject();
-      obj.registrationCount = event.registrations.length;
-      return obj;
-    });
+    const data = events.map(event => ({
+      ...event,
+      registrationCount: rcMap.get(event._id.toString()) || 0,
+    }));
 
     res.status(200).json({ success: true, count: data.length, data });
   } catch (error) {
@@ -142,10 +149,11 @@ export const getMyRegistrations = async (req, res, next) => {
 
     const registrations = await Registration.find({ studentId: req.user._id })
       .populate('eventId', 'title name venue date time duration category description registrationFees prize')
+      .lean()
       .sort({ createdAt: -1 });
 
     const responseData = registrations.map(reg => {
-      const regObj = reg.toObject();
+      const regObj = { ...reg };
       regObj.event = regObj.eventId;
       delete regObj.eventId;
       return regObj;
@@ -231,23 +239,34 @@ export const getAllEvents = async (req, res, next) => {
     const events = await Event.find(query)
       .populate('createdBy', 'name email enrollmentNumber designation department')
       .populate('assignedFaculty', 'name email phone designation department collegeName')
-      .populate('registrations', 'name email')
+      .lean()
       .sort({ date: 1 }); // Sorted by earliest date first
 
+    // Batch-fetch registration counts using aggregation (avoids populating all users)
+    const eventIds = events.map(e => e._id);
+    const regCounts = await Registration.aggregate([
+      { $match: { eventId: { $in: eventIds } } },
+      { $group: { _id: '$eventId', count: { $sum: 1 } } }
+    ]);
+    const countMap = new Map(regCounts.map(r => [r._id.toString(), r.count]));
+
     // Add role-specific enrichment
-    let responseData = events.map(event => {
-      const eventObj = event.toObject();
-      eventObj.registrationCount = event.registrations.length;
-      return eventObj;
-    });
+    let responseData = events.map(event => ({
+      ...event,
+      registrationCount: countMap.get(event._id.toString()) || 0,
+    }));
 
     if (req.user.role === 'student') {
-      responseData = await Promise.all(responseData.map(async (eventObj) => {
-        const registration = await Registration.findOne({
-          studentId: req.user._id,
-          eventId: eventObj._id,
-        });
+      // Batch-fetch ALL registrations for this student in ONE query (fixes N+1)
+      const studentRegs = await Registration.find({ studentId: req.user._id })
+        .select('eventId paymentStatus qrCode')
+        .lean();
+      const regMap = new Map(
+        studentRegs.map(r => [r.eventId.toString(), r])
+      );
 
+      responseData = responseData.map(eventObj => {
+        const registration = regMap.get(eventObj._id.toString());
         const isAttended = eventObj.attended?.some(id => id.toString() === req.user._id.toString());
 
         return {
@@ -257,7 +276,7 @@ export const getAllEvents = async (req, res, next) => {
           paymentStatus: registration ? registration.paymentStatus : null,
           qrCode: (registration && registration.paymentStatus === 'pending') ? registration.qrCode : null,
         };
-      }));
+      });
     }
       
     res.status(200).json({ success: true, count: responseData.length, data: responseData });
@@ -279,6 +298,7 @@ export const getPendingEvents = async (req, res, next) => {
     const events = await Event.find({ status: 'pending' })
       .populate('createdBy', 'name email enrollmentNumber designation department')
       .populate('assignedFaculty', 'name email phone designation department collegeName')
+      .lean()
       .sort({ createdAt: -1 });
 
     res.status(200).json({ success: true, count: events.length, data: events });

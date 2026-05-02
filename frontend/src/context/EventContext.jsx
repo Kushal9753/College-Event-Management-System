@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import api from '../services/api';
 import { useSocket } from './SocketContext';
 
@@ -11,6 +11,7 @@ export const EventProvider = ({ children }) => {
  const [error, setError] = useState(null);
  const clearError = () => setError(null);
  const socket = useSocket();
+ const debounceRef = useRef(null);
 
  const fetchEvents = async () => {
  try {
@@ -38,18 +39,48 @@ export const EventProvider = ({ children }) => {
  fetchEvents();
  }, []);
 
+ // Debounced refresh (max once per 2 seconds) to prevent refetch storms
+ const debouncedRefresh = useCallback(() => {
+ if (debounceRef.current) clearTimeout(debounceRef.current);
+ debounceRef.current = setTimeout(() => {
+ fetchEvents();
+ }, 2000);
+ }, []);
+
+ // Surgical update for known events, debounced fallback for unknown
+ const handleEventUpdate = useCallback((updatedEvent) => {
+ if (!updatedEvent) {
+ // Null signal means "refresh everything"
+ debouncedRefresh();
+ return;
+ }
+ // Update the specific event in local state without API call
+ setEvents(prev => {
+ const eventId = updatedEvent._id || updatedEvent.id;
+ const idx = prev.findIndex(e => e.id === eventId);
+ if (idx >= 0) {
+  const updated = [...prev];
+  updated[idx] = { ...updated[idx], ...updatedEvent, id: eventId };
+  return updated;
+ }
+ // New event — add it
+ return [...prev, { ...updatedEvent, id: updatedEvent._id }];
+ });
+ }, [debouncedRefresh]);
+
  useEffect(() => {
  if (!socket) return;
  
- // Auto-refresh events when related socket triggers arrive
- socket.on('event_created', fetchEvents);
- socket.on('event_updated', fetchEvents);
+ // Use surgical updates instead of full refetch on each socket event
+ socket.on('event_created', handleEventUpdate);
+ socket.on('event_updated', handleEventUpdate);
  
  return () => {
- socket.off('event_created', fetchEvents);
- socket.off('event_updated', fetchEvents);
+ socket.off('event_created', handleEventUpdate);
+ socket.off('event_updated', handleEventUpdate);
+ if (debounceRef.current) clearTimeout(debounceRef.current);
  };
- }, [socket]);
+ }, [socket, handleEventUpdate]);
 
  // Register for an event via backend API
  const registerEvent = async (eventId) => {

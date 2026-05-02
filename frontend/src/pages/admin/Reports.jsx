@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import api from '../../services/api';
+import { useQuery } from '../../hooks/useQuery';
 import { 
   BarChart2, 
   Tent, 
@@ -31,32 +32,23 @@ const REPORT_TYPES = [
 
 const Reports = () => {
   const [activeReport, setActiveReport] = useState('summary');
-  const [reportData, setReportData] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  const fetchReport = async (type) => {
-    try {
-      setLoading(true);
-      const params = { type };
+  const { data: reportData, loading, error, refetch } = useQuery(
+    `admin-report-${activeReport}-${startDate}-${endDate}`,
+    async () => {
+      const params = { type: activeReport };
       if (startDate && endDate) {
         params.startDate = startDate;
         params.endDate = endDate;
       }
       const res = await api.get('/admin/reports', { params });
-      setReportData(res.data.data);
-    } catch (err) {
-      console.error('Failed to fetch report:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchReport(activeReport);
-  }, [activeReport, startDate, endDate]);
+      return res.data.data;
+    },
+    { staleTime: 60000, deps: [activeReport, startDate, endDate] }
+  );
 
   const handleDownload = async () => {
     try {
@@ -88,8 +80,6 @@ const Reports = () => {
 
   const handleTabClick = (id) => {
     if (activeReport === id) return;
-    setReportData(null);
-    setLoading(true);
     setActiveReport(id);
   };
 

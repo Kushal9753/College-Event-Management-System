@@ -1,14 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import api from '../../services/api';
 import { useSocket } from '../../context/SocketContext';
+import { useQuery } from '../../hooks/useQuery';
 import EventDetailsModal from '../../components/common/EventDetailsModal';
 import { SearchX } from 'lucide-react';
 
 const Dashboard = () => {
- const [events, setEvents] = useState([]);
- const [stats, setStats] = useState(null);
- const [loading, setLoading] = useState(true);
- const [error, setError] = useState(null);
+ // Cached data fetching — data persists across navigations
+ const { data: events = [], loading, error, refetch, setOptimistic } = useQuery(
+ 'admin-events',
+ async () => {
+ const response = await api.get('/events');
+ return response.data.data || [];
+ },
+ { staleTime: 30000 } // 30s cache
+ );
+
+ const { data: stats } = useQuery(
+ 'admin-stats',
+ async () => {
+ const response = await api.get('/admin/stats');
+ return response.data?.data || null;
+ },
+ { staleTime: 60000 } // 60s cache for stats
+ );
+
  const socket = useSocket();
  
  // Tabs State
@@ -21,39 +37,18 @@ const Dashboard = () => {
  const [actionLoading, setActionLoading] = useState(null);
  const [selectedEvent, setSelectedEvent] = useState(null);
 
- const fetchData = async () => {
- try {
- setLoading(true);
- const [eventsRes, statsRes] = await Promise.all([
- api.get('/events'), // Fetch all events
- api.get('/admin/stats').catch(() => ({ data: { data: null } })) // Ignore stats error if not implemented
- ]);
- setEvents(eventsRes.data.data || []);
- if (statsRes.data?.data) {
- setStats(statsRes.data.data);
- }
- setError(null);
- } catch (err) {
- setError(err.response?.data?.message || 'Failed to load dashboard data');
- } finally {
- setLoading(false);
- }
- };
-
- useEffect(() => {
- fetchData();
- }, []);
-
- useEffect(() => {
+ // Socket: debounced background refresh instead of full refetch
+ React.useEffect(() => {
  if (!socket) return;
- socket.on('event_created', fetchData);
- socket.on('event_updated', fetchData);
+ const handleUpdate = () => refetch();
+ socket.on('event_created', handleUpdate);
+ socket.on('event_updated', handleUpdate);
  
  return () => {
- socket.off('event_created', fetchData);
- socket.off('event_updated', fetchData);
+ socket.off('event_created', handleUpdate);
+ socket.off('event_updated', handleUpdate);
  };
- }, [socket]);
+ }, [socket, refetch]);
 
  const handleApprove = async (id) => {
  try {

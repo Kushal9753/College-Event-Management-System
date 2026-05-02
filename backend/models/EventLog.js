@@ -39,4 +39,7 @@ const eventLogSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Performance index for event log queries
+eventLogSchema.index({ event: 1, createdAt: -1 });
+
 export default mongoose.model('EventLog', eventLogSchema);

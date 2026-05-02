@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import api from '../../services/api';
+import { useQuery } from '../../hooks/useQuery';
 import { 
   IndianRupee, 
   CreditCard, 
@@ -14,23 +15,29 @@ import {
 } from 'lucide-react';
 
 const AdminPayments = () => {
-  const [registrations, setRegistrations] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('processed');
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
+  const { data: registrations = [], loading, error, refetch } = useQuery(
+    'admin-payments',
+    async () => {
       const eventsRes = await api.get('/events');
       const events = eventsRes.data.data || [];
       
       const allRegs = [];
-      for (const event of events) {
-        if (event.registrationFees > 0 && event.registrations?.length > 0) {
-          try {
-            const partRes = await api.get(`/events/${event._id}/participants`);
-            const participants = partRes.data?.data?.participants || [];
+      
+      // Fetch participants for events that have fees
+      const feeEvents = events.filter(e => e.registrationFees > 0 && e.registrations?.length > 0);
+      
+      if (feeEvents.length > 0) {
+        const results = await Promise.allSettled(
+          feeEvents.map(e => api.get(`/events/${e._id}/participants`))
+        );
+        
+        results.forEach((r, i) => {
+          if (r.status === 'fulfilled') {
+            const participants = r.value.data?.data?.participants || [];
+            const event = feeEvents[i];
             
             participants.forEach(p => {
               allRegs.push({
@@ -49,23 +56,14 @@ const AdminPayments = () => {
                 date: p.paymentDate ? new Date(p.paymentDate) : new Date(),
               });
             });
-          } catch (e) {
-            // skip error for this event
           }
-        }
+        });
       }
 
-      setRegistrations(allRegs.sort((a, b) => b.date - a.date));
-    } catch (err) {
-      console.error('Failed to fetch data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
+      return allRegs.sort((a, b) => b.date - a.date);
+    },
+    { staleTime: 30000 }
+  );
 
   const processedPayments = registrations.filter(r => r.paymentStatus === 'paid');
   const pendingPayments = registrations.filter(r => r.paymentStatus !== 'paid');

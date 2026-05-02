@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import api from '../../services/api';
+import { useQuery } from '../../hooks/useQuery';
 import EventDetailsModal from '../../components/common/EventDetailsModal';
 import { 
   CalendarDays, MapPin, Clock, User, ArrowRight,
@@ -7,26 +8,16 @@ import {
 } from 'lucide-react';
 
 const MyEvents = () => {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  useEffect(() => {
-    const fetchAssignedEvents = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get('/events/assigned');
-        setEvents(res.data.data || []);
-        setError(null);
-      } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load assigned events');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAssignedEvents();
-  }, []);
+  const { data: events = [], loading, error, refetch } = useQuery(
+    'faculty-assigned-events',
+    async () => {
+      const res = await api.get('/events/assigned');
+      return res.data.data || [];
+    },
+    { staleTime: 30000 }
+  );
 
   const getStatusConfig = (status) => {
     const configs = {
@@ -207,15 +198,7 @@ const MyEvents = () => {
           onClose={() => setSelectedEvent(null)}
           onUpdate={() => { 
             setSelectedEvent(null); 
-            const fn = async () => { 
-              try { 
-                const res = await api.get('/events/assigned'); 
-                setEvents(res.data.data || []); 
-              } catch(e){
-                console.error("Failed to refetch assigned events:", e);
-              } 
-            }; 
-            fn(); 
+            refetch(); 
           }}
         />
       )}
