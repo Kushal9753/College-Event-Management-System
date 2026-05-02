@@ -93,10 +93,10 @@ const Dashboard = () => {
  }
  };
 
- // Filter events based on active tab
- const filteredEvents = events.filter(event => 
- activeTab === 'All' ? true : event.status?.toLowerCase() === activeTab.toLowerCase()
- );
+  // Filter events based on active tab
+  const filteredEvents = (events || []).filter(event => 
+    activeTab === 'All' ? true : event.status?.toLowerCase() === activeTab.toLowerCase()
+  );
 
  const renderStatusBadge = (status) => {
  switch (status?.toLowerCase()) {

@@ -27,7 +27,7 @@ export function useQuery(key, fetcher, options = {}) {
   const [data, setData] = useState(() => {
     // Initialize from cache if available
     const cached = getCached(key);
-    return cached ? cached.data : null;
+    return cached ? cached.data : undefined;
   });
   const [loading, setLoading] = useState(() => {
     const cached = getCached(key);
