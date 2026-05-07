@@ -110,7 +110,8 @@ export const createFaculty = async (req, res, next) => {
     });
 
     // Send invite email
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrls = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : ['http://localhost:5173'];
+    const frontendUrl = frontendUrls[frontendUrls.length - 1]; // Pick the last one (usually production) or just frontendUrls[0]
     const resetUrl = `${frontendUrl}/set-password?token=${inviteToken}`;
     const message = `Dear ${faculty.name},\n\nYou are invited to join CDGI Event Management System as a Faculty member.\n\nPlease click the link below to set your password and access your dashboard:\n\n${resetUrl}\n\nThis link will expire in 24 hours.`;
 
