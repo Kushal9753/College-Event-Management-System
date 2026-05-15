@@ -31,10 +31,14 @@ const Register = () => {
 
  const handleChange = (e) => {
  const { name, value } = e.target;
- setFormData(prev => ({ ...prev, [name]: value }));
+ let finalValue = value;
+ if (name === 'phone') {
+   finalValue = value.replace(/\D/g, '').slice(0, 10);
+ }
+ setFormData(prev => ({ ...prev, [name]: finalValue }));
  setApiError('');
 
- const error = validateField(name, value);
+ const error = validateField(name, finalValue);
  setErrors(prev => ({ ...prev, [name]: error }));
  };
 

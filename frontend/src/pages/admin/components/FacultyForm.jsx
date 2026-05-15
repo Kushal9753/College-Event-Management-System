@@ -50,7 +50,14 @@ const FacultyForm = ({ isOpen, onClose, onSubmit, initialData, isSubmitting }) =
 
  const handleChange = (e) => {
  const { name, value } = e.target;
- setFormData(prev => ({ ...prev, [name]: value }));
+ 
+ if (name === 'phone') {
+   const numericValue = value.replace(/\D/g, '').slice(0, 10);
+   setFormData(prev => ({ ...prev, [name]: numericValue }));
+ } else {
+   setFormData(prev => ({ ...prev, [name]: value }));
+ }
+ 
  if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
  };
 
@@ -112,15 +119,22 @@ const FacultyForm = ({ isOpen, onClose, onSubmit, initialData, isSubmitting }) =
  {/* Phone */}
  <div>
  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
- <input
- name="phone"
- value={formData.phone}
- onChange={handleChange}
- placeholder="9876543210"
- className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
- errors.phone ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
- }`}
- />
+ <div className="flex">
+   <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm font-medium">
+     +91
+   </span>
+   <input
+   name="phone"
+   type="tel"
+   value={formData.phone}
+   onChange={handleChange}
+   placeholder="9876543210"
+   maxLength={10}
+   className={`flex-1 min-w-0 block w-full px-4 py-2 border rounded-none rounded-r-lg focus:outline-none focus:ring-2 transition-colors ${
+   errors.phone ? 'border-red-500 focus:ring-red-500 z-10' : 'border-gray-300 focus:ring-blue-500 z-10'
+   }`}
+   />
+ </div>
  {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
  </div>
 

@@ -118,14 +118,10 @@ export const createFaculty = async (req, res, next) => {
     try {
       await sendEmail({
         email: faculty.email,
+        to_name: faculty.name,
         subject: 'Welcome to CDGI Event Management - Set Your Password',
         message,
-        html: `<p>Dear <strong>${faculty.name}</strong>,</p>
-               <p>You are invited to join CDGI Event Management System as a Faculty member.</p>
-               <p>Please click the button below to set your password and access your dashboard:</p>
-               <a href="${resetUrl}" style="display:inline-block;padding:10px 20px;background-color:#4F46E5;color:white;text-decoration:none;border-radius:5px;margin:10px 0;">Set Password</a>
-               <p>Or copy and paste this link in your browser:<br><a href="${resetUrl}">${resetUrl}</a></p>
-               <p><small>This link will expire in 24 hours.</small></p>`,
+        reset_url: resetUrl,
       });
     } catch (err) {
       console.error('Email could not be sent', err);

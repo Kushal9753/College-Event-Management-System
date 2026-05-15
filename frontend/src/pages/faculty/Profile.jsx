@@ -74,7 +74,12 @@ const Profile = () => {
   }, []);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    let finalValue = value;
+    if (name === 'phone') {
+      finalValue = value.replace(/\D/g, '').slice(0, 10);
+    }
+    setFormData({ ...formData, [name]: finalValue });
   };
 
   const handleSubmit = async (e) => {
@@ -220,15 +225,21 @@ const Profile = () => {
                       <Phone className="w-4 h-4 text-gray-400" />
                       Contact Number
                     </label>
-                    <input 
-                      type="tel" 
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      required
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:border-transparent transition-all outline-none"
-                    />
+                    <div className="flex">
+                      <span className="inline-flex items-center px-4 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 text-gray-500 text-sm font-medium">
+                        +91
+                      </span>
+                      <input 
+                        type="tel" 
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        disabled={!isEditing}
+                        maxLength={10}
+                        required
+                        className="flex-1 min-w-0 w-full px-4 py-3 rounded-none rounded-r-xl border border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:border-transparent transition-all outline-none"
+                      />
+                    </div>
                   </div>
                   
                   <div className="space-y-2 md:col-span-2">

@@ -9,6 +9,7 @@ const Input = ({
 }) => {
  const [showPassword, setShowPassword] = useState(false);
  const isPassword = type === 'password';
+ const isTel = type === 'tel';
  const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
 
  return (
@@ -18,6 +19,21 @@ const Input = ({
  {label}
  </label>
  )}
+ {isTel ? (
+  <div className="flex relative">
+    <span className="inline-flex items-center px-3 border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm sm:text-base rounded-l-lg font-medium">
+      +91
+    </span>
+    <input
+      id={id}
+      type={inputType}
+      className={`flex-1 min-w-0 w-full px-4 py-3 min-h-[44px] text-sm sm:text-base border rounded-none rounded-r-lg focus:outline-none focus:ring-2 transition-colors ${
+        error ? 'border-red-500 focus:ring-red-500 bg-red-50 z-10' : 'border-gray-300 focus:ring-blue-500 z-10'
+      }`}
+      {...props}
+    />
+  </div>
+ ) : (
  <div className="relative">
  <input
  id={id}
@@ -50,6 +66,7 @@ const Input = ({
  </button>
  )}
  </div>
+ )}
  {error && <p className="mt-1 text-sm text-red-500 animate-pulse">{error}</p>}
  </div>
  );
